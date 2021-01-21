@@ -1,0 +1,540 @@
+Delete sync query: SELECT w.r_object_id, w.i_chronicle_id, w.object_name, w.r_folder_path, w.a_webc_url , w.i_full_format FROM dm_dbo.dm_webc_80066636_s w WHERE NOT EXISTS (SELECT s.r_object_id FROM dm_folder_r f, dm_sysobject_r sr2 , dm_sysobject_s s , dmr_content_r c , dm_sysobject_r sr WHERE ((f.r_folder_path = '/Environmental' OR f.r_folder_path like '/Environmental/%' ) ) AND sr2.r_object_id = s.r_object_id AND sr2.i_folder_id = f.r_object_id AND sr.r_object_id = s.r_object_id AND c.parent_id = s.r_object_id AND sr.r_version_label = 'PUBLISHDES' AND (w.i_chronicle_id = s.i_chronicle_id AND w.r_object_id = s.r_object_id AND w.object_name = s.object_name AND w.r_folder_path = f.r_folder_path AND w.i_full_format = c.i_full_format ))
+
+
+###################################################
+# see documents requested for rendition 
+
+select * from dmi_queue_item where event='rendition'
+
+
+Documents which don’t have a rendition:
+select * from dm_document where r_object_id not in (select parent_id from dmr_content where rendition>0)
+
+
+Renditions generated today:
+select * from dmr_content where rendition>0 and set_time > DATE(TODAY)
+
+
+
+Only files listed in the manifest are deleted during a full refresh. If a directory listed on the manifest
+contains files or directories that are not on the manifest, the directory itself is not deleted during a full
+refresh, but any files or subdirectories appearing on the manifest are deleted. Therefore, directories
+in the target root directory can contain files placed there by another application. Those files are not
+deleted during a full refresh because they are not listed on the manifest.
+
+If there are files or directories published by Interactive Delivery Services that must not be deleted
+during a full refresh, or if you need to retain the permissions on particular files or directories, create a
+keep list of each file and directory in the target root directory that must be retained. A keep list can be
+created for each content delivery configuration.
+
+
+Keep lists are named publishing_configuration_id.keep
+
+
+where publishing_configuration_id is the object
+ID of the webc target config, and are saved to IDS_install_directory/admin/manifests.
+
+Keep lists contain
+one line per file or directory that the publishing operation must not delete. Each
+
+
+The a_webc_path attribute is present when the global publishing feature is used. 
+It is the actual path of the content files on the target file system.
+
+It appears only in the _s table on the target, not in the
+
+database catalog on the source side. For
+
+For example, if the a_webc_url for a particular document is
+/product/desc.html and the document is assigned the language_code (locale)
+ fr_FR, the a_webc_path   is /fr_FR/product/desc.html 
+
+and that is the file’s location on the target file system.Using the global
+publishing feature, page 55 provides more information on global publishing
+
+
+The r_version_label attribute is among the attributes published by default when you publish
+attributes. By default, it is published as a single-valued attribute whose value is the version label of
+the document version being published. However, in the repository tables, it is a repeating attribute.
+To publish all values of r_version_label, select it as an additional attribute to publish or set the
+publish_source_version_labels argument to TRUE.
+If you change the value of the publish_source_version_labels argument or if you select r_version_label
+as an additional attribute to publish, run a publishing operation that recreates the property schema.
+
+
+
+
+The r_modified_date attribute is used by Web Publisher on the source side to determine whether a
+document has changed since it was last published.
+
+The r_folder_path attribute in the target database is not identical to the r_folder_path in the
+repository. The r_folder_path of an object in the repository includes the object name of the object
+itself. In the target database, the object name is omitted. For example, if the value of r_folder_path
+
+
+in the repository is lprtestrepo/John Smith/johngraphic.gif, the value of r_folder_path in the target
+database is lprtestrepo/John Smith/.
+
+
+
+Modifying or deleting a relation object
+If you modify or delete a relation object associated with a document that is published, and you are
+publishing relation objects, perform a single-item publish on the document.
+
+
+
+a specific document:
+http://URL_of_webroot/value_of_a_webc_url
+If the global publishing feature is in use, the URL would be:
+http://URL_of_webroot/value_of_a_webc_path
+EMC
+
+################################################################################
+
+Deleting documents from a repository
+Do not delete documents and other objects in an Interactive Delivery Services repository from
+your Web server’s file system. Instead, 
+
+# *********to remove objects from the website, 
+
+************ delete them from thepublishing folder in the repository.
+
+When you rename or remove a subfolder from the publishing folder hierarchy in the repository,
+ an incremental publish removes the content files from that subfolder on the target host, 
+
+leaving the subfolder empty. The empty subfolder is removed by the incremental publish.
+
+
+##############################################################################################
+
+To delete documents from an existing Interactive Delivery Services repository:
+
+1. In the source repository, delete the objects from the publishing folder.
+
+2. Perform a full-refresh, force-refresh, or incremental publishing operation.
+
+When the cache is synchronized with the repository, the objects are deleted from the cache.
+
+#########################################################################################################
+
+Determining whether the source software is running
+Use these instructions to determine whether the source Interactive Delivery Services software
+is running.
+
+To determine whether the Interactive Delivery Services source program is running:
+
+1. Connect to the source host.
+
+2. Issue this command:
+
+$ netstat -an | grep 6677
+
+This result should appear:
+<machine IP>.6677 *.* 0 0 49152 0 LISTEN
+
+
+also >>>> Alternatively, check the log files at this location: $DOCUMENTUM_SHARED/jboss7.1.1/server/
+DctmServer_WEBCACHE/log.
+
+To determine whether the Interactive Delivery Services target program is running:
+1. Connect to the target host as the Interactive Delivery Services installation owner.
+
+
+2. Issue this command:
+ps -ef | grep product/jre
+
+ ps -ef | grep product/jre
+dmadmin  28652 27300  0 12:57 pts/0    00:00:00 grep product/jre
+
+To start an Interactive Delivery Services target instance on a UNIX or Linux host:
+
+2. Use the dm_start_port_number shell script to start the Interactive Delivery Services target, where
+port_number is the port on which Interactive Delivery Services listens, as provided during
+installation:
+dm_start_port_number
+
+
+
+Starting and stopping Interactive Delivery Services
+from the command line
+
+On Windows source hosts
+On Windows source hosts, use the net start and net stop commands:
+net start "EMC Interactive Delivery Services"
+net stop "EMC Interactive Delivery Services"
+
+On UNIX source hosts
+On UNIX source hosts, scripts are provided for starting and stopping Interactive Delivery Services:
+<DOCUMENTUM>/dctm_shared/jboss7.1.1/server/startWEBCACHE.sh
+<DOCUMENTUM>/dctm_shared/jboss7.1.1/server/stopWEBCACHE.sh
+
+
+
+stop commands to start or stop an instance:
+net start "EMC IDS Target_secure_port"
+net stop "EMC IDS Target_secure_port"
+net start "EMC IDS Target_non_secure_port"
+net stop "EMC IDS Target_non_secure_port"
+
+For example:
+net stop "EMC IDS Target_secure_2788"
+net start "EMC IDS Target_non_secure_2787"
+
+On UNIX hosts, use the scripts provided to start or stop an instance:
+dm_start_port.sh
+dm_stop_port.sh
+The scripts are located in the target_install_dir/admin directory.
+#######################################
+
+
+Cleaning up the export directory
+
+The export directory is on the source machine. Clean up of this directory is determined as follows:
+• If the trace level is less than 10, the export directory is automatically cleaned up.
+• If the trace level is set to 10, you can clean up the export directory by removing the
+\webcache_dir_* directories creating by the publishing operations.
+By default, these directories are located below the server installation directory at
+C:\DOCUMENTUM\share\temp\web_publish\ (Windows) or /DOCUMENTUM/share/temp/
+web_publish/ (UNIX or Linux).
+
+
+To clean up the data transfer directory automatically after each successful publishing job, set the
+clean_transfer_dir key in the agent.ini file to TRUE. The key is set to FALSE by default. When the key
+is set to TRUE, the data transfer directory is not cleaned up if an error occurs during the publishing
+job or if the trace level is set to 10.
+Do not manually clean up the data transfer
+
+
+Cleaning up log files
+Interactive
+
+Delivery Services Log Purge job to remove log files from the repository. This job
+is similar to the Log Purge job, but only removes Interactive Delivery Services logs. By default,
+the job runs every 24 hours and removes logs that are at least 30 days old. Use the Jobs pages of
+Documentum Administrator to change the schedule to meet your business needs
+
+
+
+Monitoring the Interactive Delivery Services source
+software
+Use the SourceStatus program to monitor the status of the Interactive Delivery Services source on a
+particular host.
+The SourceStatus program is a Java class that is installed on the Content Server host as part of the
+webcache.jar file. To invoke the class, use this command, where port is the location of the source
+Interactive Delivery Services instance:
+java -classpath "path_of_webcache.jar" com.documentum.webcache.monitor.
+SourceStatus localhost port "-ping true"
+On Windows, for example, the command can appear
+
+On Windows, for example, the command can appear as:
+java.exe -classpath "C:\Documentum\jboss7.1.1\server\DctmServer_WEBCACHE\
+deploy\scs.ear\APP-INF\lib\webcache.jar"
+com.documentum.webcache.monitor.SourceStatus localhost 6677 "-ping true"
+
+
+
+On UNIX, for example, the command can appear as:
+java –classpath "/export/dove1/tuser15/dctm/dctm_shared/jboss7.1.1/
+server/DctmServer_WEBCACHE/deploy/scs.ear/APP-INF/lib/webcache.jar"
+com.documentum.webcache.monitor.SourceStatus
+localhost 6677 "-ping true"
+If the Interactive Delivery Services source
+
+
+
+Fred DES Testing0227.pdf
+
+#####################################
+PUBLISHED > SET YES { fw_Finnefrock SPCC Plan 2-6-18.pdf} AT 2.7PM 
+
+
+vdcqwwebg2001
+
+FredDESDuplicateTest.pdf
+
+
+FREDR-TEST-DES.txt
+
+FREDR-TEST-DES
+
+
+
+from dm_webc_80047fd3_s 
+
+
+select * from dm_webc_80047fd3_s  where a_webc_url = 'IT Support/FREDR-TEST-DES.txt'
+
+
+select * from dm_webc_80047fd3_s  where a_webc_url = 'Compliance Reporting and Supporting Documents/fw_Finnefrock SPCC Plan 2-6-18.pdf'
+
+######################################
+
+
+),PA,Compliance Reporting and Supporting Documents,Dominion Gas Transmission,,Beaver Station,Final,nulldate,2,Water - Drinking Water,Compressor Station,/Environmental/Compliance Reporting and Supporting Documents,1.9.18 Annual Drinking Water Analysis Beaver and North Summit.pdf,pdf,Compliance Reporting and Supporting Documents/1.9.18 Annual Drinking Water Analysis Beaver and North Summit.pdf,090 07:57:22,
+Feb 28 11:12:38.907: 10.144.16.71:T:Thread-306: TRACE5: Moving content
+
+
+
+dm_webcache_publish parameters:
+Docbase Name: ENVDOCQ
+Config Object Id: 080295fe80047fd3
+User Name: 
+Method Trace Level: 
+Command Line: -config_object_id 080295fe80047fd3 -docbase_name ENVDOCQ 
+
+
+
+
+../webcache/jre/linux/bin/java -Durl=http://localhost:6677/services/scs/publish com.documentum.webcache.publish.HttpClient
+
+
+################################
+send ids config on methods to talk to target 
+
+
+ egrep --color 'Mem|Webcache|Swap' /proc/meminfo
+MemTotal:       10130520 kB
+MemFree:          192504 kB
+SwapCached:         4576 kB
+SwapTotal:      16023544 kB
+SwapFree:       16007560 kB
+###################################
+
+MemTotal:        5977196 kB
+MemFree:          718076 kB
+
+SwapTotal:      16023544 kB
+SwapFree:       16023544 kB
+
+
+NA3INDIP_12C =
+ (DESCRIPTION =
+  (ADDRESS = (PROTOCOL = TCP)(HOST = VDCTDEP-CLUSTER)(PORT = 1521))
+  (LOAD_BALANCE = YES)
+  (CONNECT_DATA = (SERVER = DEDICATED) (SERVICE_NAME = INDIP))
+ )
+
+
+
+
+###########################################################
+# vi restart_dbs_methd_webc.sh && chmod 755 restart_dbs_methd_webc.sh
+#!/bin/bash
+###################################
+# restart docbase
+# stop docbase services and bring them back up after the patching
+restartdocbase() {
+
+echo "Starting docbases back up "
+
+cd /app/documentum/fwerescripts/monitoring && ./universal_docbs_methd_webch_start_stop.sh start
+
+BACK_PID2=$!
+        while kill -0 $BACK_PID2 ; do
+                echo "Process is still active..."
+                sleep 2;
+        done
+echo "Done & Good!"
+exit 1
+
+}
+
+
+############################################
+# main script
+#######################
+restartdocbase
+
+
+
+#############################################################
+
+for (( i=0; i<${len}; i++ )); do  echo "Validating Docbase generated log:"; until grep -q "Detected during program initialization: Agent Exec connected to server" /app/documentum/dba/log/"${DOCBASE_NAME_ARRAY[$i]}";         do  sleep 15; done; done
+#################################################################
+#until grep -i "Detected during program initialization: Agent Exec connected to server" "/app/documentum/dba/log/$DOCBASE_NAME.log"; do
+                #        sleep 15;kill $!;
+                #done;
+                #sleep 5;
+                #PING_PID=$(grep -q 'Agent Exec');
+                #SECONDS=0;
+                #while grep -q "Detected during program initialization: Agent Exec connected to server" "/app/documentum/dba/log/$DOCBASE_NAME.log"; do
+                #       sleep 15;
+                #       if [ $SECONDS = 30 ]; then
+                #               kill $PING_PID;
+                #       fi;
+                #done
+        ####################################################################################################################################################
+        #DOCBASE_NAME_ARRAY=($(cat /app/documentum/dba/config/*/server.ini | grep -i docbase_name | cut -d'=' -f2|sort))
+        len=${#DOCBASE_NAME_ARRAY[*]}
+                for (( i=0; i<${len}; i++ )); do
+                        echo "Validating Docbase generated log:";
+                        until grep -q "Detected during program initialization: Agent Exec connected to server" /app/documentum/dba/log/"${DOCBASE_NAME_ARRAY[$i]}";
+                        do
+                                 sleep 15;
+                        done;
+                done
+        #######################################################################################################
+        #       tail -f "/app/documentum/dba/log/$DOCBASE_NAME.log"| while read LOGNAME
+        #       do
+        #               [[ "${LOGLINE}" == *"Agent Exec connected to server"* ]] && pkill -P $$ tail
+        #       done;
+        #########################################################################################################
+
+
+
+
+
+
+
+
+
+
+
+do_something &
+sleep 300
+kill $!                                                                                                                                                                                                                      msw12                             0901efd5808c95a9  No                              
+
+
+ping www.goooooogle.com & PING_PID=$(pgrep 'ping'); 
+SECONDS=0; while pgrep -q 'ping'; do
+	sleep 0.2;
+	if [ $SECONDS = 10 ]; then
+		kill $PING_PID; 
+	fi;
+done
+
+PING_PID=$(pgrep 'Agent Exec');
+SECONDS=0; while pgrep -q "Detected during program initialization: Agent Exec connected to server" "/app/documentum/dba/log/$DOCBASE_NAME.log"; do
+	sleep 15;
+	if [ $SECONDS = 30 ]; then
+		kill $PING_PID;
+	fi;
+done
+
+
+
+
+
+
+
+grep -q 'Detected during program initialization: Agent Exec connected to server' /app/documentum/dba/log/COVDOCQ.log
+
+
+
+
+Alex i think this one will help you lot.
+tail -f logfile |grep -m 1 "Server Started" | xargs echo "" >> /dev/null ;
+
+this command will never give an entry on the logfile but will grep silently...
+
+
+#############################################################################
+# convert dbnames to array 
+
+STARTSCRIPT=($(for i in "${DocbaseArray[@]}"; do ls | grep -i  $i| grep -i "start"|grep -v .bak; done))
+
+
+
+
+tail -f "/app/documentum/dba/log/$DOCBASE_NAME.log"| while read LOGNAME
+                do
+                        [[ "${LOGLINE}" == *"Agent Exec connected to server"* ]] && pkill -P $$ tail
+                done;
+
+
+ DOCBASE_NAME=`cat /app/documentum/dba/config/*/server.ini | grep -i docbase_name | awk '{print $3}'`       #docbasename
+    DOCBASE_VERSION=`cat /app/documentum/dba/config/*/server.ini | grep -i version | awk '{print $3}'`         # version
+        LUNCH_DOCKBASE=`locate dm_launch_Docbroker`
+
+
+
+DocbaseArray=($(cat /app/documentum/dba/config/*/server.ini | grep -i docbase_name | cut -d'=' -f2))
+
+
+# DOCBASE_NAME_ARRAY=($(cat /app/documentum/dba/config/*/server.ini | grep -i docbase_name | cut -d'=' -f2))
+# sort 
+########################################################
+
+ DOCBASE_NAME_ARRAY=($(cat /app/documentum/dba/config/*/server.ini | grep -i docbase_name | cut -d'=' -f2|sort))
+
+
+
+
+echo "${DOCBASE_NAME_ARRAY[@]}"
+
+len=${#DOCBASE_NAME_ARRAY[*]}
+for (( i=0; i<${len}; i++ )); do 
+	echo "Validating Docbase generated log:";
+	until grep -q "Detected during program initialization: Agent Exec connected to server" /app/documentum/dba/log/"${DOCBASE_NAME_ARRAY[$i]}";
+        do
+		 sleep 15;
+	done;
+done
+
+
+
+########################################################
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+cd /app/documentum/dba; ./"${STARTSCRIPT[$i]}";
+
+
+
+ tail -f "/app/documentum/dba/log/$DOCBASE_NAME.log"| while read LOGNAME
+                do
+                        [[ "${LOGLINE}" == *"Agent Exec connected to server"* ]] && pkill -P $$ tail
+                done;
+
+
+
+
+
+
+for (( i=0; i<${len}; i++ )); do 
+	echo "Validating Docbase generated log:";
+	until grep -q "Detected during program initialization: Agent Exec connected to server" /app/documentum/dba/log/"${DOCBASE_NAME_ARRAY[$i]}";
+        do
+		 sleep 15;
+	done;
+done
+
+################################
+
+ echo "${DOCBASE_NAME_ARRAY[@]}"
+ELANDOCQ TSDOCQ
+$ echo "${DOCBASE_NAME_ARRAY[0]}"
+ELANDOCQ
+$ echo "${DOCBASE_NAME_ARRAY[1]}"
+
+
+
+ping www.goooooogle.com & PING_PID=$(pgrep 'ping'); SECONDS=0; while pgrep -q 'ping'; do sleep 0.2; if [ $SECONDS = 10 ]; then kill $PING_PID; fi; done
+
+
+
+crontab -l
+20 3 * * * /usr/local/sysadm/recon/recon > /dev/null 2>&1
+@reboot su - dmadmin -c "/app/documentum/fwerescripts/at_reboot/universal_docbs_methd_webch_start_stop.sh start" >/app/documentum/fwerescripts/at_reboot/reboot.log 2>&1
+
+
+
+
+
+
+
