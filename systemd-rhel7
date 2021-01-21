@@ -1,0 +1,600 @@
+
+
+
+
+
+Creating a systemd service in Linux is much easier than writing init scripts. Here is an example to create an iperf3 service for systemd!
+
+OS used in this guide: CentOS 7 with EPEL for the iperf3 package
+
+
+1. First, install iperf3.
+$ sudo yum install iperf3
+
+
+
+2. Next, create a user iperf which will be used to run the iperf3 service.
+$ sudo adduser iperf -s /sbin/nologin
+
+
+
+3. Next, create the following file:
+/etc/systemd/system/iperf3.service
+
+
+
+Put in the following contents and save the file:
+[Unit]
+Description=iperf3 Service
+After=network.target
+
+[Service]
+Type=simple
+User=iperf
+ExecStart=/usr/bin/iperf3 -s
+Restart=on-abort
+
+
+[Install]
+WantedBy=multi-user.target
+
+
+
+
+Reload systemd to see the changes
+$ sudo systemctl daemon-reload
+
+
+
+Start the iperf3 service:
+$ sudo systemctl start iperf3
+
+
+
+Check the status:
+[stmiller@ny ~]$ sudo systemctl status iperf3
+iperf3.service - iperf3 Service
+   Loaded: loaded (/etc/systemd/system/iperf3.service; disabled)
+   Active: active (running) since Mon 2014-12-08 13:43:49 EST; 18s ago
+ Main PID: 32657 (iperf3)
+   CGroup: /system.slice/iperf3.service
+           +-32657 /usr/bin/iperf3 -s
+
+Dec 08 13:43:49 ny.stmiller.org systemd[1]: Started iperf3 Service.
+[stmiller@ny ~]$ 
+
+
+
+Stop the iperf3 service:
+$ sudo systemctl stop iperf3
+
+
+
+Start the service at boot:
+[stmiller@ny ~]$ sudo systemctl enable iperf3
+ln -s '/etc/systemd/system/iperf3.service' '/etc/systemd/system/multi-user.target.wants/iperf3.service'
+
+
+
+Disable the service at boot:
+$ sudo systemctl disable iperf3
+
+
+
+
+
+
+DOCKDIR="/app/documentum/dba"
+
+DOCKBROKER="`find $DIR -type f -name "*dm_launch_*broker*" -print`"
+
+STARTDOCBROKER="`find $DIR -type f -name "*dm_launch_*broker*"|sed 's/\(.\{2\}\)//'`"
+
+STOPTDOCBROKER="`find $DIR -type f -name "*dm_stop_*broker*"|sed 's/\(.\{2\}\)//'`"
+
+
+docbkroker_start() { 
+
+	echo "**********************************************************************************************"
+        echo " ****************************************************************************************"
+	echo $STARTDOCBROKER &&
+        if [[ -z "$STARTDOCBROKER" ]] 2>/dev/null; then
+                echo "Blank Missing Docbroker Script";
+        else
+                echo "Docbroker Script Found Restarting  IT... "
+                echo "STATING DocBroker:";
+                cd /app/documentum/dba; ./$STARTDOCBROKER;
+                sleep 5;
+                echo "OK : DocBroker started successfully";
+        fi
+} 
+
+
+
+docbkroker_stop () {
+
+	echo "**********************************************************************************************"
+        echo " ****************************************************************************************"
+
+	if [[ -z "$STOPTDOCBROKER" ]] 2>/dev/null; then
+                echo "Blank Missing Docbroker Script";
+        else
+                echo "Docbroker Script Found Restarting  IT... "
+                echo "STATING DocBroker:";
+                cd /app/documentum/dba; ./$STOPTDOCBROKER;
+                sleep 5;
+                echo "OK : DocBroker started successfully";
+        fi
+	echo "**********************************************************************************************"
+        echo " ****************************************************************************************"
+
+} 
+
+
+#############################################################
+
+for (( i=0; i<${len}; i++ )); do  echo "Validating Docbase generated log:"; until grep -q "Detected during program initialization: Agent Exec connected to server" /app/documentum/dba/log/"${DOCBASE_NAME_ARRAY[$i]}";         do  sleep 15; done; done
+#################################################################
+#until grep -i "Detected during program initialization: Agent Exec connected to server" "/app/documentum/dba/log/$DOCBASE_NAME.log"; do
+                #        sleep 15;kill $!;
+                #done;
+                #sleep 5;
+                #PING_PID=$(grep -q 'Agent Exec');
+                #SECONDS=0;
+                #while grep -q "Detected during program initialization: Agent Exec connected to server" "/app/documentum/dba/log/$DOCBASE_NAME.log"; do
+                #       sleep 15;
+                #       if [ $SECONDS = 30 ]; then
+                #               kill $PING_PID;
+                #       fi;
+                #done
+        ####################################################################################################################################################
+        #DOCBASE_NAME_ARRAY=($(cat /app/documentum/dba/config/*/server.ini | grep -i docbase_name | cut -d'=' -f2|sort))
+        len=${#DOCBASE_NAME_ARRAY[*]}
+                for (( i=0; i<${len}; i++ )); do
+                        echo "Validating Docbase generated log:";
+                        until grep -q "Detected during program initialization: Agent Exec connected to server" /app/documentum/dba/log/"${DOCBASE_NAME_ARRAY[$i]}";
+                        do
+                                 sleep 15;
+                        done;
+                done
+        #######################################################################################################
+        #       tail -f "/app/documentum/dba/log/$DOCBASE_NAME.log"| while read LOGNAME
+        #       do
+        #               [[ "${LOGLINE}" == *"Agent Exec connected to server"* ]] && pkill -P $$ tail
+        #       done;
+        #########################################################################################################
+
+
+
+
+
+
+
+
+
+
+
+do_something &
+sleep 300
+kill $!                                                                                                                                                                                                                      msw12                             0901efd5808c95a9  No                              
+
+
+ping www.goooooogle.com & PING_PID=$(pgrep 'ping'); 
+SECONDS=0; while pgrep -q 'ping'; do
+	sleep 0.2;
+	if [ $SECONDS = 10 ]; then
+		kill $PING_PID; 
+	fi;
+done
+
+PING_PID=$(pgrep 'Agent Exec');
+SECONDS=0; while pgrep -q "Detected during program initialization: Agent Exec connected to server" "/app/documentum/dba/log/$DOCBASE_NAME.log"; do
+	sleep 15;
+	if [ $SECONDS = 30 ]; then
+		kill $PING_PID;
+	fi;
+done
+
+
+
+
+
+
+
+grep -q 'Detected during program initialization: Agent Exec connected to server' /app/documentum/dba/log/COVDOCQ.log
+
+
+
+
+Alex i think this one will help you lot.
+tail -f logfile |grep -m 1 "Server Started" | xargs echo "" >> /dev/null ;
+
+this command will never give an entry on the logfile but will grep silently...
+
+
+#############################################################################
+# convert dbnames to array 
+
+STARTSCRIPT=($(for i in "${DocbaseArray[@]}"; do ls | grep -i  $i| grep -i "start"|grep -v .bak; done))
+
+
+
+
+tail -f "/app/documentum/dba/log/$DOCBASE_NAME.log"| while read LOGNAME
+                do
+                        [[ "${LOGLINE}" == *"Agent Exec connected to server"* ]] && pkill -P $$ tail
+                done;
+
+
+ DOCBASE_NAME=`cat /app/documentum/dba/config/*/server.ini | grep -i docbase_name | awk '{print $3}'`       #docbasename
+    DOCBASE_VERSION=`cat /app/documentum/dba/config/*/server.ini | grep -i version | awk '{print $3}'`         # version
+        LUNCH_DOCKBASE=`locate dm_launch_Docbroker`
+
+
+
+DocbaseArray=($(cat /app/documentum/dba/config/*/server.ini | grep -i docbase_name | cut -d'=' -f2))
+
+
+# DOCBASE_NAME_ARRAY=($(cat /app/documentum/dba/config/*/server.ini | grep -i docbase_name | cut -d'=' -f2))
+# sort 
+########################################################
+
+ DOCBASE_NAME_ARRAY=($(cat /app/documentum/dba/config/*/server.ini | grep -i docbase_name | cut -d'=' -f2|sort))
+
+
+
+
+echo "${DOCBASE_NAME_ARRAY[@]}"
+
+len=${#DOCBASE_NAME_ARRAY[*]}
+for (( i=0; i<${len}; i++ )); do 
+	echo "Validating Docbase generated log:";
+	until grep -q "Detected during program initialization: Agent Exec connected to server" /app/documentum/dba/log/"${DOCBASE_NAME_ARRAY[$i]}";
+        do
+		 sleep 15;
+	done;
+done
+
+
+
+########################################################
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+cd /app/documentum/dba; ./"${STARTSCRIPT[$i]}";
+
+
+
+ tail -f "/app/documentum/dba/log/$DOCBASE_NAME.log"| while read LOGNAME
+                do
+                        [[ "${LOGLINE}" == *"Agent Exec connected to server"* ]] && pkill -P $$ tail
+                done;
+
+
+
+
+
+
+for (( i=0; i<${len}; i++ )); do 
+	echo "Validating Docbase generated log:";
+	until grep -q "Detected during program initialization: Agent Exec connected to server" /app/documentum/dba/log/"${DOCBASE_NAME_ARRAY[$i]}";
+        do
+		 sleep 15;
+	done;
+done
+
+################################
+
+ echo "${DOCBASE_NAME_ARRAY[@]}"
+ELANDOCQ TSDOCQ
+$ echo "${DOCBASE_NAME_ARRAY[0]}"
+ELANDOCQ
+$ echo "${DOCBASE_NAME_ARRAY[1]}"
+
+
+ping www.goooooogle.com & PING_PID=$(pgrep 'ping'); SECONDS=0; while pgrep -q 'ping'; do sleep 0.2; if [ $SECONDS = 10 ]; then kill $PING_PID; fi; done
+
+
+#!/bin/bash 
+###########################################
+# SAP & hr services 
+# cronjob 
+# /app/documentum/fwerescripts/java_tomcat_restart.sh > /dev/null 2>&1
+# daily # daily_monitor_java_tomcat.sh
+# @reboot /app/documentum/fwerescripts/java_tomcat_restart.sh > /dev/null 2>&1
+# 0 8 * * * /app/documentum/fwerescripts/daily_monitor_java_tomcat.sh> /dev/null 2>&1
+###########################################
+
+MAILTO="fredrick.o.were@dominionenergy.com"
+HOSTNAME="`uname -n`"
+echo "Stating  TOMCAT AND JAVA ...SERVICES "
+
+echo "*****************************************************"
+
+DIR="/app/documentum/apache-tomcat-6.0.32/bin/"
+
+
+cd "$DIR" && ./startup.sh
+
+echo " VALIDATING tomcat AND JAVA PROCESS is running " > message
+OUT="` ps -ef | grep -i tomcat | awk '{print $9}' | wc -l`"
+
+if [ $OUT -gt 1 ]; then 
+
+	echo "Tomcat and Java process is running" >> message; 
+	mail -s "Search server process ALERT on $HOSTNAME.$TIMENOW"  $MAILTO < message
+	rm -f  message
+
+else 
+
+	echo "Process down: Process not restarted!  restarting the process " >> message;
+	cd /app/documentum/apache-tomcat-6.0.32/bin; ./startup.sh;
+	echo "Process restarted NOW" >>message
+	mail -s "Java & Tomcat process ALERT on $HOSTNAME.$TIMENOW"  $MAILTO < message
+	rm -f  message
+fi
+
+
+# new project 
+###################################################
+
+case "$1" in
+        start)
+            start
+            ;;
+         
+        stop)
+            stop
+            ;;
+         
+        status)
+            status anacron
+            ;;
+        restart)
+            stop
+            start
+            ;;
+        condrestart)
+            if test "x`pidof anacron`" != x; then
+                stop
+                start
+            fi
+            ;;
+         
+        *)
+            echo $"Usage: $0 {start|stop|restart|condrestart|status}"
+            exit 1
+ 
+esac
+
+=====================================================================
+
+cat showparams.sh
+#!/bin/bash
+                                                                                
+echo "This script demonstrates function arguments."
+echo
+                                                                                
+echo "Positional parameter 1 for the script is $1."
+echo
+                                                                                
+test ()
+{
+echo "Positional parameter 1 in the function is $1."
+RETURN_VALUE=$?
+echo "The exit code of this function is $RETURN_VALUE."
+}
+                                                                                
+test other_param
+
+[lydia@cointreau ~/test] ./showparams.sh parameter1
+This script demonstrates function arguments.
+ 
+Positional parameter 1 for the script is parameter1.
+ 
+Positional parameter 1 in the function is other_param.
+The exit code of this function is 0.
+##################################################
+###########################################################
+
+#set the path for the root and other users:
+#######################################################
+
+#/etc/profile file
+
+
+pathmunge () {
+        if ! echo $PATH | /bin/egrep -q "(^|:)$1($|:)" ; then
+           if [ "$2" = "after" ] ; then
+              PATH=$PATH:$1
+           else
+              PATH=$1:$PATH
+           fi
+        fi
+}
+
+# Path manipulation
+if [ `id -u` = 0 ]; then
+        pathmunge /sbin
+        pathmunge /usr/sbin
+        pathmunge /usr/local/sbin
+fi
+
+pathmunge /usr/X11R6/bin after
+
+unset pathmunge
+
+
+#######################################################################################
+#Bucku[ps 
+#########################################################
+
+#On Sunday, only bupbash is executed.
+#############################################################################################
+
+#/bin/bash
+
+LOGFILE="/nethome/tille/log/backupscript.log"
+echo "Starting backups for `date`" >> "$LOGFILE"
+
+buplinux()
+{
+DIR="/nethome/tille/xml/db/linux-basics/"
+TAR="Linux.tar"
+BZIP="$TAR.bz2"
+SERVER="rincewind"
+RDIR="/var/www/intra/tille/html/training/"
+
+cd "$DIR"
+tar cf "$TAR" src/*.xml src/images/*.png src/images/*.eps
+echo "Compressing $TAR..." >> "$LOGFILE"
+bzip2 "$TAR"
+echo "...done." >> "$LOGFILE"
+echo "Copying to $SERVER..." >> "$LOGFILE"
+scp "$BZIP" "$SERVER:$RDIR" > /dev/null 2>&1
+echo "...done." >> "$LOGFILE"
+echo -e "Done backing up Linux course:\nSource files, PNG and EPS images.\nRubbish removed." >> "$LOGFILE"
+rm "$BZIP"
+}
+
+bupbash()
+{
+DIR="/nethome/tille/xml/db/"
+TAR="Bash.tar"
+BZIP="$TAR.bz2"
+FILES="bash-programming/"
+SERVER="rincewind"
+RDIR="/var/www/intra/tille/html/training/"
+
+cd "$DIR"
+tar cf "$TAR" "$FILES"
+echo "Compressing $TAR..." >> "$LOGFILE"
+bzip2 "$TAR"
+echo "...done." >> "$LOGFILE"
+echo "Copying to $SERVER..." >> "$LOGFILE"
+scp "$BZIP" "$SERVER:$RDIR" > /dev/null 2>&1
+echo "...done." >> "$LOGFILE"
+
+echo -e "Done backing up Bash course:\n$FILES\nRubbish removed." >> "$LOGFILE"
+rm "$BZIP"
+}
+
+DAY=`date +%w`
+
+if [ "$DAY" -lt "2" ]; then
+  echo "It is `date +%A`, only backing up Bash course." >> "$LOGFILE"
+  bupbash
+else
+  buplinux
+  bupbash
+fi
+
+ 
+#############################################
+==============================================
+
+Removing rubbish upon exit
+
+#The whatis command relies on a database which is regularly built using the makewhatis.cron script with cron:
+
+
+#!/bin/bash
+
+LOCKFILE=/var/lock/makewhatis.lock
+
+# Previous makewhatis should execute successfully:
+
+[ -f $LOCKFILE ] && exit 0
+
+# Upon exit, remove lockfile.
+
+trap "{ rm -f $LOCKFILE ; exit 255; }" EXIT
+
+touch $LOCKFILE
+makewhatis -u -w
+exit 0
+
+ ###########################################
+ ######################################################
+
+#!/bin/sh
+
+OP=$1
+
+if [ "$1" == "-a" ]; then
+	ID=$2
+	FIRST=$3
+	LAST=$4
+	AGE=$5
+	
+	echo "$ID,$FIRST,$LAST,$AGE" >> users.dat
+	echo "User Added"
+	
+elif [ "$1" == "-l" ]; then
+	cat users.dat
+fi
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
