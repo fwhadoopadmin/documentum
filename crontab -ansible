@@ -1,0 +1,113 @@
+#################################
+# ansible 
+##################################
+
+off_cronjob_automation.yml
+---
+- hosts: "{{ hosts }}"
+  tasks:
+  - name: ping all hosts
+    ping:
+  - name: TESTING CRONJOB
+    cron:
+     name: "check dirs"
+     state: absent
+  - name: Adding Monitoring Cronjob
+    cron:
+     name: "Add Monitoring Job"
+     minute: "*/5"
+#     hour: "0"
+     job: "/app/documentum/fwerescripts/monitoring/closeloop_automation_search.sh > /app/documentum/fwerescripts/monitoring/search.log 2>&1"
+
+
+
+############################################
+---
+
+ - hosts: test-servers
+   user: gamesroot
+   become: true
+   become_user: root
+   gather_facts: yes 
+
+   vars:
+       mountpoint: "{{m}}"
+   tasks:
+   - shell: df -h "{{mountpoint}}" | tail -n 1 | awk {'print $5 '}  | sed 's/%//g'
+     register: test
+   - shell: rm -rf /tmp/disk.txt; touch /tmp/disk.txt
+     delegate_to: localhost
+   - shell: echo "{{ inventory_hostname }}"
+     register: op
+   - debug:
+       msg:
+         - "{{test.stdout}}"
+         - "{{ op.stdout }}"
+
+   - name: add lines
+     lineinfile: 
+       dest: /tmp/disk.txt 
+       line: "{{ m }} HAS REACHED {{ test.stdout }} % ON {{ op.stdout }}, KINDLY CHECK !!!"
+       state: present
+     delegate_to: 127.0.0.1 
+     register: msgtxt
+     with_items:
+       - "{{ test.stdout }}"
+       - "{{ op.stdout }}"
+     when: test.stdout|int > 5 
+   - local_action: copy content= "{{ msgtxt.results }}" dest=/tmp/disk2.txt 
+   
+   
+   
+   ###########################################
+   
+   ---
+   - hosts: Prod_Content_Servers
+     tasks:
+     - name: ping all hosts
+       ping:
+   
+     - name: Check app_data_usage
+       shell: df -h /app/documentum/data/| awk '{print $4}' | sed 's/%//g' |grep -v Use|grep -v "Avail"
+       register: data_result
+     - debug: msg={{ data_result }}
+       # print all content of the output
+     - debug: var=data_result
+     - name: Check documentum_disk_usage
+       shell: df -h /app/documentum/| awk '{print $4}' | sed 's/%//g' |grep -v Use|grep -v "Avail"
+       register: documentum_disk_result
+       # print shell output
+     - debug: msg={{ documentum_disk_result }}
+       #       # print all content of the output
+     - debug: var=documentum_disk_result
+   
+     
+   ########################################
+   # - name:  Execute the script
+   #   command: sh /tmp/test-methods.sh
+   #   register: script_result
+   # - debug: var=script_result
+   ######################################## 
+     
+  # Store file into /tmp/fetched/host.example.com/tmp/somefile
+  - fetch:
+      src: /tmp/somefile
+      dest: /tmp/fetched
+  
+  # Specifying a path directly
+  - fetch:
+      src: /tmp/somefile
+      dest: /tmp/prefix-{{ inventory_hostname }}
+      flat: yes
+  
+  # Specifying a destination path
+  - fetch:
+      src: /tmp/uniquefile
+      dest: /tmp/special/
+      flat: yes
+  
+  # Storing in a path relative to the playbook
+  - fetch:
+      src: /tmp/uniquefile
+      dest: special/prefix-{{ inventory_hostname }}
+      flat: yes
