@@ -1,0 +1,3900 @@
+#########################################
+# daily used commands 
+######################################
+
+
+
+ps -elfyww | grep java
+S UID        PID  PPID  C PRI  NI    RSS      SZ WCHAN  STIME TTY       TIME   CMD
+S root     11386     1 17  80   0 357204 1244770 futex_ 08:07 pts/2 00:00:30   java ... server1
+
+#####################
+# cpu 
+###########################
+
+$ cat /proc/cpuinfo
+processor    : 0
+model name    : Intel(R) Core(TM) i7-3720QM CPU @ 2.60GHz
+cpu cores    : 4...
+
+Query the current frequency of each CPU core (in Hz):
+$ cat /sys/devices/system/cpu/cpu*/cpufreq/scaling_cur_freq
+1200000
+1200000
+
+
+Query the NUMA layout:
+$ numactl --hardware
+available: 1 nodes (0)
+node 0 cpus: 0 1 2 3 4 5 6 7
+node 0 size: 16000 MB
+node 0 free: 4306 MB
+node distances:
+node   0
+  0:  10
+
+#######################
+CPU Speed
+####################
+
+For maximum performance, ensure the scaling_governor is set to performance 
+#(https://www.kernel.org/doc/Documentation/cpu-freq/user-guide.txt).
+
+
+$ for i in /sys/devices/system/cpu/cpu*/cpufreq/scaling_governor; do echo "performance" > $i; done
+
+# Consider disabling services such as `cpuspeed`, `cpufreqd`, `powerd`, etc.
+
+#  Check the maximum frequency of each CPU core (in Hz):
+
+$ for i in /sys/devices/system/cpu/cpu*/cpufreq/scaling_max_freq; do cat $i; done
+
+
+
+####################
+vmstat
+#########################
+
+Query processor usage:
+$ vmstat -t -n -SM 5 2
+procs -----------memory---------- ---swap-- -----io---- --system-- -----cpu------ ---timestamp---
+ r  b   swpd   free   buff  cache   si   so    bi    bo   in   cs us sy id wa st
+ 0  0      0  10600    143   2271    0    0   114    24  150  623  3  1 93  3  0    2014-02-10 08:18:37 PST
+ 0  0      0  10600    143   2271    0    0     2    24  679 1763  1  0 98  0  0    2014-02-10 08:18:42 PST
+
+To run vmstat in the background with a 5 second interval:
+
+$ nohup vmstat -tn 5 > vmstat_`hostname`_`date +"%Y%m%d_%H%M"`.txt &
+
+
+the top of the file:
+$ FILE=vmstat_`hostname`_`date +"%Y%m%d_%H%M"`.txt; date > $FILE; nohup vmstat -n 5 >> $FILE &
+
+To stop collection, kill the vmstat process. For example:
+$ pkill -f vmstat_`hostname`
+
+
+
+
+The kernel must be compiled with SMP enabled to utilize SMP CPUs. The sequence "SMP" will be in the `uname -a` output if the kernel is SMP-aware.
+
+
+
+Per Processor Utilization
+
+Query per processor utilization:
+$ mpstat -A 5 2
+Linux 2.6.32-358.11.1.el6.x86_64 (oc2613817758.ibm.com)     02/07/2014     _x86_64_    (8 CPU)
+
+01:49:47 PM  CPU    %usr   %nice     %sys %iowait    %irq   %soft    %steal  %guest   %idle
+01:49:47 PM  all    1.08    0.00    0.60    0.23    0.00    0.00    0.00    0.00   98.09
+01:49:47 PM    0    2.43    0.00    1.83    0.00    0.00    0.00    0.00    0.00   95.74
+01:49:47 PM    1    1.62    0.00    1.21    0.00    0.00    0.00    0.00    0.00   97.17...
+
+
+
+
+Some processors may have higher interrupt rates due to network card bindings.
+
+
+##############
+top
+#############
+
+top provides processor usage for the overall system and individual processes. Without arguments, it will periodically update the screen with updated information:
+
+        top - 15:46:52 up 178 days,  4:53,  2 users,  load average: 0.31, 0.08, 0.02
+        Tasks:  77 total,   2 running,  74 sleeping,   1 stopped,   0 zombie
+        Cpu(s): 24.6% us,  0.5% sy,  0.0% ni, 74.9% id,  0.0% wa,  0.0% hi,  0.0% si
+        Mem:   5591016k total,  5416896k used,   174120k free,  1196656k buffers
+        Swap:  2104472k total,    17196k used,  2087276k free,  2594884k cached
+
+The CPU(s) row in this header section shows the CPU usage in terms of the following:
+us: Percentage of CPU time spent in user space.
+sy: Percentage of CPU time spent in kernel space.
+ni: Percentage of CPU time spent on low priority processes.
+id: Percentage of CPU time spent idle.
+wa: Percentage of CPU time spent in wait (on disk).
+hi: Percentage of CPU time spent handling hardware interrupts.
+si: Percentage of CPU time spent handling software interrupts.
+          PID USER      PR  NI  VIRT  RES  SHR S %CPU %MEM    TIME+  COMMAND
+         8502 user1     25   0  599m 466m 5212 R 99.9  8.5   0:23.92 java...
+
+
+####################################
+Per-thread CPU Usage
+#################################
+
+The output of top -H on Linux shows the breakdown of the CPU usage on the machine by individual threads. The top output has the following sections of interest:
+top - 16:15:45 up 21 days,  2:27,  3 users,  load   average: 17.94, 12.30, 5.52   
+      Tasks: 150 total,  26 running, 124 sleeping,   0   stopped,   0 zombie   
+      Cpu(s): 87.3% us,  1.2% sy,  0.0% ni, 27.6% id,  0.0%   wa,  0.0% hi,  0.0% si   
+      Mem:   4039848k total,  3999776k used,   40072k free,    92824k buffers   
+      Swap:  2097144k total,      224k used, 2096920k free,  1131652k cached   
+     
+        PID USER    PR  NI  VIRT  RES  SHR S %CPU   %MEM    TIME+  COMMAND   
+      31253 user1   16   0 2112m 2.1g 1764 R 37.0   53.2   0:39.89 java   
+      31249 user1   16   0 2112m 2.1g 1764 R 15.5   53.2   0:38.29 java   
+      31244 user1   16   0 2112m 2.1g 1764 R 13.6   53.2   0:40.05 java...
+      ..
+
+PID: The thread ID. This can be converted into hexadecimal and used to correlate to the "native ID" in a javacore.txt file...
+
+ S: The state of the thread. This can be one of the following:
+R: Running
+S: Sleeping
+D: Uninterruptible sleep
+T: Traced
+Z: Zombie
+
+%CPU: The percentage of a single CPU usage by the thread...
+
+
+
+############################
+
+The following command may be used to periodically gather the top 50 threads' CPU usage for the entire machine:
+
+$ cd /var/tmp/
+$ nohup top -b -d 30 -H | grep -A 50 "top - " >> top_`hostname`_`date +%Y%m%d%H%M%S`.out &
+
+
+
+
+sar
+
+sar is part of the sysstat package. It may be run periodically from a crontab in /etc/cron.d/sysstat and writes files to /var/log/sa/. You can report sar data textually on the system using the "sar" command:
+$ sar -A | head
+Linux 2.6.32-431.30.1.el6.x86_64 (host)     09/09/2014     _x86_64_    (8 CPU)
+12:00:01 AM     CPU      %usr     %nice      %sys   %iowait    %steal      %irq     %soft    %guest     %idle
+12:10:01 AM     all      0.86      0.00      0.59     0.15      0.00      0.00     0.00      0.00     98.41...
+
+Some useful things to look at in sar:
+runq-sz
+plist-sz
+kbmemused - kbbuffers - kbcached
+
+You can also visualize sar log files using ksar which is BSD license (https://sourceforge.net/projects/ksar/):
+
+
+
+
+
+nmon
+
+nmon was originally developed for AIX but has since been ported to Linux under the GPL license: http://nmon.sourceforge.net/pmwiki.php
+
+One reason to use nmon on Linux is that the Java GUI nmon analyzer is a very powerful and flexible graphing application that accepts nmon data. For details, see the nmon section in the AIX chapter.
+
+Start nmon for essentially unlimited collection with a 60 second interval:
+# su
+# cd /var/tmp/
+# nohup nmon -fT -s 60 -c 1000000 && sleep 1 && cat nohup.out
+
+Executing this command will start the nmon collector in the background, so explicitly putting it into the background (&) is not necessary. This will create a file with the name $HOST_$STARTDAY_$STARTTIME.nmon
+
+##########################
+# su
+# cd /var/tmp/
+# nohup nmon -fT -s 60 -c 1000000 && sleep 1 && cat nohup.out
+
+#####################################################################################################################################
+https://publib.boulder.ibm.com/httpserv/cookbook/Operating_Systems-Linux.html#Operating_Systems-Linux-Central_Processing_Unit_CPU
+###############################################################################################################################
+
+
+
+Per-process Memory Usage
+
+Use the ps command to show the resident and virtual sizes of a process:
+$ ps -eww -o pid,rss,vsz,command
+  PID   RSS    VSZ COMMAND
+32665 232404 4777744 java ... server1
+
+
+
+
+
+(https://www.kernel.org/doc/Documentation/sysctl/vm.txt)
+
+
+
+free
+
+Query physical memory usage:
+$ free -m
+             total       used       free     shared    buffers     cached
+Mem:         15569      10888       4681          0        298       8029
+-/+ buffers/cache:       2561      13008
+Swap:            0          0          0
+
+
+
+/proc/meminfo
+
+"meminfo: Provides information about distribution and utilization of memory." (https://www.kernel.org/doc/Documentation/filesystems/proc.txt)
+
+ Example (only showing first few lines):
+$ cat /proc/meminfo | head -4
+MemTotal:       15943596 kB
+MemFree:         2870172 kB
+Buffers:          346644 kB
+Cached:          9689544 kB
+
+To find how much memory is used by programs and kernel:
+
+MemUsed = MemTotal - MemFree - Buffers - Cached
+
+In the above example = 2.89GB
+####################################
+
+
+
+
+Query disk usage:
+$ df -h
+Filesystem                       Size  Used Avail Use% Mounted on
+/dev/mapper/vg_lifeboat-lv_root  385G  352G   14G  97% /
+tmpfs                            7.7G  628K  7.7G   1% /dev/shm
+/dev/sda1                        485M   97M  363M  22% /boot
+
+==========================
+
+
+
+
+
+
+
+Query filesystem information:
+
+$ stat -f /
+  File: "/"
+    ID: 2975a4f407cfa7e5 Namelen: 255     Type: ext2/ext3
+Block size: 4096       Fundamental block size: 4096
+Blocks: Total: 100793308  Free: 8616265    Available: 3496265
+Inodes: Total: 25600000   Free: 20948943
+========================
+
+Query disk utilization:
+
+Query disk utilization:
+
+$ iostat -xm 5 2
+
+Linux 2.6.32-358.11.1.el6.x86_64 (oc2613817758.ibm.com)     02/07/2014     _x86_64_    (8 CPU)
+
+avg-cpu:  %user   %nice %system %iowait  %steal   %idle
+           1.17    0.00    0.55    0.25    0.00   98.03
+
+Device:         rrqm/s   wrqm/s     r/s     w/s    rMB/s    wMB/s avgrq-sz avgqu-sz   await  svctm  %util
+sda               0.17    17.13    1.49    3.63     0.05     0.08    50.69     0.13   26.23   3.98   2.03
+dm-0              0.00     0.00    1.48   20.74     0.05     0.08    11.59     7.46  335.73   0.92   2.05
+dm-1              0.00     0.00    1.48   20.57     0.05     0.08    11.68     7.46  338.35   0.93   2.05
+
+
+
+
+=============================
+Networking
+
+Query interfaces:
+$ netstat -i
+Kernel Interface table
+Iface       MTU Met    RX-OK RX-ERR RX-DRP RX-OVR    TX-OK TX-ERR TX-DRP TX-OVR Flg
+eth0       1500   0        0      0      0      0        0      0      0      0 BMU
+lo        16436   0  3162172      0      0      0  3162172      0      0      0 LRU
+tun0       1362   0   149171      0      0      0   150329      0      0      0 MOPRU
+virbr0     1500   0    43033      0      0      0    63937      0      0      0 BMRU
+virbr1     1500   0        0      0      0      0      124      0      0      0 BMRU
+wlan0      1500   0  1552613      0      0      0   704346      0      0      0 BMRU
+
+Use netstat to collect a snapshot of network activity: netstat -antop
+
+
+Example:
+$ sudo netstat -antop
+Active Internet connections (servers and established)
+Proto Recv-Q Send-Q Local Address               Foreign Address             State       PID/Program name    Timer
+tcp        0      0 0.0.0.0:6000                0.0.0.0:*                   LISTEN      3646/Xorg           off (0.00/0/0)
+tcp        0      0 10.20.117.232:46238         10.20.54.72:80              ESTABLISHED 4140/firefox        off (0.00/0/0)
+tcp        0      0 10.20.133.78:35370          10.20.253.174:443           TIME_WAIT   -                   timewait (6.63/0/0)
+tcp        0      0 10.20.133.78:52458          10.20.33.79:1352            ESTABLISHED 5441/notes          keepalive (3542.42/0/0)
+tcp        0      1 ::ffff:10.20.133.78:49558   ::ffff:10.20.52.206:52311   SYN_SENT    3502/BESC
+
+
+
+===========================
+
+Query network interface statistics:
+$ netstat -s
+Ip:
+    5033261 total packets received
+    89926 forwarded
+    0 incoming packets discarded
+    4223478 incoming packets delivered
+    4202714 requests sent out
+    38 outgoing packets dropped
+    2 dropped because of missing route
+    26 reassemblies required
+    13 packets reassembled ok
+Tcp:
+    15008 active connections openings
+    248 passive connection openings
+    611 failed connection attempts
+    160 connection resets received
+    4 connections established
+    4211392 segments received
+    4093580 segments send out
+    8286 segments retransmited
+    0 bad segments received.
+    3855 resets sent...
+
+Ping a remote host. In general, and particularly for LANs, ping times should be less than a few hundred milliseconds with little standard deviation.
+$ ping -n 10.20.30.1
+PING 10.20.30.1 (10.20.30.1) 56(84) bytes of data.
+64 bytes from 10.20.30.1: icmp_seq=1 ttl=250 time=112 ms
+64 bytes from 10.20.30.1: icmp_seq=2 ttl=250 time=136 ms
+64 bytes from 10.20.30.1: icmp_seq=3 ttl=250 time=93.8 ms
+64 bytes from 10.20.30.1: icmp_seq=4 ttl=250 time=91.6 ms
+
+
+Since kernel 2.6.18, the current and maximum sizes of the socket backlog on a connection are reported in the Recv-Q and Send-Q columns, respectively, for listening sockets:
+
+
+Recv-Q
+
+ Established: The count of bytes not copied by the user program connected to this socket.
+
+Listening: Since Kernel 2.6.18 this column contains the current syn backlog.
+
+Send-Q
+
+ Established: The count of bytes not acknowledged by the remote host.
+
+Listening: Since Kernel 2.6.18 this column
+
+
+
+
+
+
+Listening: Since Kernel 2.6.18 this column contains the maximum size of the syn backlog.
+
+
+=====================================
+Networked Filesystems (NFS)
+
+NFS may be monitored with tools such as nfsiostat (https://www.kernel.org/doc/man-pages/online/pages/man8/nfsiostat.8.html). For example:
+
+
+$ FILE=nfsiostat_`hostname`_`date +"%Y%m%d_%H%M"`.txt; date > $FILE; nohup stdbuf --output=L nfsiostat 300 >> $FILE &
+
+Note: Without using `stdbuf`, older versions of nfsiostat do not flush output when stdout is redirected, so output to the file may be delayed.
+
+For example:
+nfs.example.com:/path mounted on /path:
+   op/s		rpc bklog
+ 189.86 	   0.00
+read:             ops/s		   kB/s		  kB/op		retrans		avg RTT (ms)	avg exe (ms)
+		  3.755 	 60.772 	 16.186        4 (0.0%) 	 15.335 	125.260
+write:            ops/s		   kB/s		  kB/op		retrans		avg RTT (ms)	avg exe (ms)
+		148.911 	446.987 	  3.002       22 (0.0%) 	  3.249 	  5.660
+
+
+==========================
+ethtool
+
+ethtool may be used to query network driver and hardware settings. For example, to query the ring buffers:
+# ethtool -g eth0
+Ring parameters for eth0:
+Pre-set maximums:
+RX:             2040
+RX Mini:        0
+RX Jumbo:       8160
+TX:             255
+Current hardware settings:
+RX:             255
+RX Mini:        0
+RX Jumbo:       0
+TX:             255
+
+
+
+Socket Buffers
+
+The default receive buffer size for all network protocols is net.core.rmem_default (https://www.kernel.org/doc/man-pages/online/pages/man7/socket.7.html). The default receive buffer size for TCP sockets (for both IPv4 and IPv6) is the second value of net.ipv4.tcp_rmem (https://www.kernel.org/doc/man-pages/online/pages/man7/tcp.7.html, https://www.kernel.org/doc/Documentation/networking/ip-sysctl.txt). These values may be overridden by an explicit call to setsockopt(SO_RCVBUF) which will set the receive buffer size to two times the requested value (https://www.kernel.org/doc/man-pages/online/pages/man7/socket.7.html). The default or requested receive buffer size is limited by net.core.rmem_max and, in the case of TCP, the third value (max) in net.ipv4.tcp_rmem.
+
+Starting with Linux 2.4.17 and 2.6.7, the kernel auto-tunes the TCP receive buffer by default. This is controlled with the property tcp_moderate_rcvbuf (https://www.kernel.org/doc/man-pages/online/pages/man7/tcp.7.html). If auto-tuning is enabled, the kernel will start the buffer at the default and modulate the size between the first (min) and third (max) values of net.ipv4.tcp_rmem, depending on memory availability. In general, the min should be set quite low to handle the case of physical memory pressure and a large number of sockets.
+
+The default send buffer size for all network protocols is net.core.wmem_default (https://www.kernel.org/doc/man-pages/online/pages/man7/socket.7.html). The default send buffer size for TCP sockets (for both IPv4 and IPv6) is the second value of net.ipv4.tcp_wmem (https://www.kernel.org/doc/man-pages/online/pages/man7/tcp.7.html, https://www.kernel.org/doc/Documentation/networking/ip-sysctl.txt). These values may be overridden by an explicit call to setsockopt(SO_SNDBUF) which will set the send buffer size to two times the requested value (https://www.kernel.org/doc/man-pages/online/pages/man7/socket.7.html). The default or requested send buffer size is limited by net.core.wmem_max and, in the case of TCP, the third value (max) in net.ipv4.tcp_wmem.
+
+In general, the maximum socket receive and send buffer sizes should be greater than the average bandwidth delay product (see the Operating Systems chapter).
+
+For example, consider setting values similar to the following in /etc/sysctl.conf and running `sysctl -p`:
+net.core.rmem_default=1048576
+net.core.wmem_default=1048576
+net.core.rmem_max=16777216
+net.core.wmem_max=16777216
+net.ipv4.tcp_rmem=4096 1048576 16777216
+net.ipv4.tcp_wmem=4096 1048576 16777216
+
+Both receive and send TCP buffers (for both IPv4 and IPv6) are regulated by net.ipv4.tcp_mem (https://www.kernel.org/doc/man-pages/online/pages/man7/tcp.7.html). tcp_mem is a set of three numbers - low, pressure, and high - measured in units of the system page size (`getconf PAGESIZE`). When the number of pages allocated by receive and send buffers is below `low`, TCP does not try to reduce its buffers' memory usage. When the number of pages exceeds `pressure`, TCP tries to reduce its buffers' memory usage. The total buffers' memory usage page may not exceed the number of pages specified by `high`. In general, these values are set as some proportions of physical memory, taking into account program/computational demands. By default, Linux sets these to proportions of RAM on boot. Query the value with sysctl and multiply the middle number by the page size (often 4096) and this is the number of bytes at which point the OS may start to trim TCP buffers.
+
+Tuning done for SPECj: http://www.spec.org/jEnterprise2010/results/res2013q2/jEnterprise2010-20130402-00042.html#JEE_AppServer_HW_0
+
+
+
+Emulating Network Behaviors
+
+netem is a network emulation component of the traffic control (tc) suite. For example, to emulate a 100ms delay on all packets:
+# tc qdisc add dev ${INTERFACE} root netem delay 100ms
+
+
+
+TCP Congestion Control
+
+
+
+and search for the `cwnd` value:
+$ ss -i
+State      Recv-Q Send-Q      Local Address:Port          Peer Address:Port   
+ESTAB      0      0            10.20.30.254:47768        10.20.30.40:http    
+     cubic wscale:0,9 rto:266 rtt:66.25/25.25 ato:40 cwnd:10 send 1.7Mbps rcv_space:14600
+
+The default congestion window size (initcwnd) may be changed by querying the default route and using the change command with initcwnd added. For example:
+# ip route show | grep default
+default via 10.20.30.1 dev wlan0  proto static
+# ip route change default via 10.20.30.1 dev wlan0  proto static initcwnd 10
+
+
+
+(https://www.ibm.com/support/knowledgecenter/SSAW57_8.5.5/com.ibm.websphere.nd.doc/ae/tprf_tunelinux.html)
+
+
+
+tcpdump
+
+Capture network packets using tcpdump (http://www-01.ibm.com/support/docview.wss?uid=swg21175744).
+
+Normally, tcpdump is run as root. For example, capture all traffic in files of size 100MB and up to 10 historical files (-C usually requires -Z):
+$ su
+# nohup tcpdump -nn -v -i any -B 4096 -s 0 -C 100 -W 10 -Z root -w capture`hostname`_`date +"%Y%m%d_%H%M"`.pcap &
+# sleep 1 && cat nohup.out
+
+
+To stop the capture:
+$ su
+# pkill -INT tcpdump
+
+
+Filter what traffic is captured using an expression (see the man page). For example, to only capture traffic coming into or going out of port 80:
+$ su
+# tcpdump -i any -B 4 -w capture.pcap "port 80"
+
+In addition to using Wireshark, you may also dump the tcpdump on any Linux machine using the same tcpdump command. For example:
+$ su
+# tcpdump -A -n -nn -l -tttt -r capture.pcap
+
+If you would like to only capture the TCP headers, then the best way to do this is to do a capture of representative traffic, then load in Wireshark, filter to tcp packets, sort by frame length and then take the smallest value and use this value N for -s. For example:
+$ su
+# tcpdump -s N ...
+
+If you see X "packets dropped by kernel" > 0, continue increasing -B N (where N is in KB):
+
+
+
+
+Process Tracing
+
+strace may be used to trace system calls that a process makes, and ltrace may be used to trace library calls that a process makes. This can be helpful in certain situations when there are low level delays such as writing to disk (strace), or investigating library calls such as libc malloc calls (ltrace).
+
+
+
+strace
+$ strace -f -tt -o outputfile.txt -p $PID
+31113 11:43:15.724911 open("/home/user/somefile", O_WRONLY|O_CREAT|O_TRUNC|O_LARGEFILE, 0666) = 139
+31113 11:43:15.725109 fstat64(139, {st_mode=S_IFREG|0664, st_size=0, ...}) = 0
+31113 11:43:15.728881 write(139, "<!DOCTYPE html PUBLIC \"-//W3C//D"..., 8192 <unfinished ...>
+31113 11:43:15.729004 <... write resumed> ) = 8192
+31113 11:43:15.729385 close(139 <unfinished ...>
+31113 11:43:15.731440 <... close resumed> ) = 0
+
+Thread ID, timestamp and call = RESULT
+
+
+
+
+
+20A%20performance%20case%20study
+
+
+
+Consider Disabling IPv6
+
+
+The setup used only IPv4 connections; it did not need IPv6 support. It got a small boost to performance by disabling IPv6 support in Linux. With IPv6 disabled, the WAS instances didn't spend extra time trying to work with possible IPv6 connections.
+
+IPv6 support can be disabled in the Linux kernel by adding the following options to the kernel command line in the boot loader configuration.
+ipv6.disable_ipv6=1 ipv6.disable=1
+
+Disabling IPv6 support in the Linux kernel guarantees that no IPv6 code will ever be run as long as the system is booted. That may be too heavy-handed. A lighter touch is to let the kernel boot with IPv6 support and then use the sysctl facility to dynamically set a kernel variable to disable IPv6.
+sysctl -w net.ipv6.conf.all.disable_ipv6=1
+
+The example above disables IPv6 on all interfaces. You can optionally disable IPv6 support on specific interfaces.
+sysctl -w net.ipv6.conf.eth0.disable_ipv6=1
+sysctl -w net.ipv6.conf.eth1.disable_ipv6=1
+
+
+
+
+
+Automatic Bug Reporting Tool (ABRT)
+
+The ABRT uses a kernel core pattern pipe hook to capture crash core dumps (https://access.redhat.com/documentation/en-US/Red_Hat_Enterprise_Linux/6/html/Deployment_Guide/ch-abrt.html):
+$ cat /proc/sys/kernel/core_pattern
+|/usr/libexec/abrt-hook-ccpp %s %c %p %u %g %t e
+
+ABRT may decide to copy or place the core file into a subdirectory of /var/spool/abrt. Ensure th
+
+
+
+
+
+
+
+yes | apt-get update
+
+
+We use > /dev/null 2>&1  to redirect normal output and errors to /dev/null.
+
+
+sudo !! # run your last command 
+
+
+cat geeks.txt | tr ':[space]:' '\t' > out.txt # Replacing Spaces with Tabs
+
+cat my_file | tr a-z A-Z > output.txt   # Convert Character Case (lower to upper)
+
+
+find . -name "*.png" -type f -print | xargs tar -cvzf pics.tar.gz 
+
+URLs in a file and you want to download them or process them in a different way:
+
+cat links.txt | xargs wget
+
+
+Just use {} combined with –i parameter to replace the arguments in the place where the result should go like this:
+
+ls /etc/*.conf | xargs -i cp {} /home/likegeeks/Desktop/out
+
+
+cat hello.txt | sort | uniq  #uniq displays its output on the screen.
+
+$ cat hello.txt | grep "dog" | grep -v "cat" # 
+
+finds all lines in hello.txt that contain the string "dog" but do not contain the
+string "cat".
+
+
+You can redirect standard error and standard output to two different files:
+$ find . -print 1>errors 2>files
+or to the same file:
+$ find . -print 1>output 2>output
+or
+$ find . -print >& output 
+
+
+You can combine input redirection with output redirection, but be careful not to
+use the same filename in both places. For example:
+$ cat < output > output
+
+
+
+One last point to note is that we can pass standard output to system utilities that
+require filenames as "-":
+$ cat package.tar.gz | gzip -d | tar tvf -
+Here the output of the gzip -d command is used as the input file to
+the tar command.
+
+
+$ find / -print 1>output 2>errors &
+
+
+
+
+You can also use ps to show all processes running on the machine (not just the
+processes in your current shell):
+$ ps -fae
+ps -aeH displays a full process hierarchy (including the init process).
+
+
+
+
+systemctl get-default
+
+To display the default target unit, type: 
+~]$ systemctl get-default
+graphical.target
+
+
+systemctl list-units --type target # current
+
+
+#loaded units regardless of their state,
+
+systemctl list-units --type target --all
+
+
+
+DIR="/app/documentum/share/jboss5.1.0/server"
+  841  find  $DIR -type f  -name "*nohup.out*" -exec ls -l {} \;
+  842  find  $DIR -type f  -name "*nohup.out*" -exec cp -r {} {}_.old \;
+  843  ls
+  844  if [ -e *_old ]; then echo "file found"; else echo "Missing"; fi
+  845  if [ -e nohup.out_.old ]; then echo "file found"; else echo "Missing"; fi
+  846  BKP="`find  $DIR -type f  -name "*nohup.out*" -exec cp -r {} {}_.old \;`"
+  847  echo $BKP
+  848  echo $BKP_.old
+  849  ll
+  850  rm nohup.out_.old_.old
+  851  ll
+  852  filename="nohup.out_.old"
+  853  if [ -e $filename ]; then echo "file found"; else echo "Missing"; fi
+  854  ll
+  855  if [ -e ! $filename ]; then echo "file found"; else echo "Missing"; fi
+  856  if [ ! -e $filename ]; then echo "file missing"; else echo " $filename Found proceeding"; fi
+  857  cd /tmp
+  858  ll
+
+
+######################################################
+
+find . -type f -exec grep -E 'fatal|error|critical|failure|warning' {} + 
+
+# finding more than one thing at the same time 
+
+grep -E 'fatal|error|critical|failure|warning|' *.log
+
+
+
+ojrplecm29
+
+
+nohup find / -xdev -type f -perm +u=s -print > out.txt &
+
+
+find . -type f | while read i; do echo $i; done
+
+while read i; do echo $i; done < myfile
+
+diff <(find /etc | sort) <(find /mnt/remote/etc | sort)
+
+nohup ./startMethodServer.sh &
+
+find . -type f -mtime 0 -exec ls -lrt {} \;
+
+nohup ./startWEBCACHE.sh &
+ps -ef | grep -i webcache
+
+
+sed -n -e '/^2012-07-19 18:22:48/,/2012-07-23 22:39:52/p' history.log
+
+######################################
+
+
+find / -name "*conf" -mtime 7                          #the last 7 days
+find /home/exampleuser/ -name "*conf" -mtime 3         # the last 7 days
+
+find . -type f -exec grep "example" '{}' \; -print
+
+find . -type f -print | xargs grep "example"
+
+
+
+find . -name "*.bak" -delete    # find &delete
+
+
+ find . -type f -name "*id_ic_forms*" -print
+
+
+##################################################
+
+find . -name "id_ic_forms*" -print
+
+
+
+
+find  $JBOSS_DIR/server/DctmServer_MethodServer -type d -name deployments
+
+find  $JBOSS_DIR/server/DctmServer_MethodServer -type d -name "deployments" -print
+/app/documentum/share/wildfly9.0.1/server/DctmServer_MethodServer/deployments
+
+
+find  $JBOSS_DIR/server/DctmServer_MethodServer -type d -name "deployments" -print |wc -l
+1
+
+
+if  [ $(find  $JBOSS_DIR/server/DctmServer_MethodServer -type d -name "deployments" -print |wc -l ) -ge 1]; then
+    echo "Yesss"; else echo "Noo"; fi 
+
+
+if  [[ $(find  $JBOSS_DIR/server/DctmServer_MethodServer -type d -name "deployments" -print |wc -l) -ge 1 ]]; then echo "Yesss"; else echo "Noo"; fi
+Yesss
+
+ find  $JBOSS_DIR/server/DctmServer_MethodServer/deployments -type f \( -name "*.failed" -o -name "*.deployed" \)
+/app/documentum/share/wildfly9.0.1/server/DctmServer_MethodServer/deployments/acs.ear.deployed
+/app/documentum/share/wildfly9.0.1/server/DctmServer_MethodServer/deployments/ServerApps.ear.deployed
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+fine multiples files at same time 
+\( -name "*.failed" -o -name "*.deployed" \)
+- name deployments
+
+
+# multiple files 
+
+\( -name "*.sh" -o -name "*.txt" \)
+
+###############################################
+
+find $($JBOSS_DIR/server/DctmServer_MethodServer)
+
+
+find . -type f -exec grep "example" '{}' \; -print
+
+
+find  /root -type d -iname "*linux*"
+
+find . -type d -iname "pkg"
+
+
+udo su_dmadmin
+
+# uname -a, cat /etc/issue/; cat /rpoc/version/;  cat /etc/redhat-release; tail /etc/redhat-release
+
+cd /app/documentum/shared/jboss-<VERSION>/server 	# change directory 
+
+ls -al 					# listy all files {verify startPrimaryDsearch.sh' & 'startIndexagent.sh' scripts}
+
+rm nohup.bak  				# Backup the nohup log file
+
+mv nohup.out nohup.bak 	 		# removes the previous backup
+
+nohup ./startPrimaryDsearch.sh   	# Execute search agent startup script
+
+tail -f nohup.out    			# cat the file to see message output &when its all done
+
+					# wait for JBoss startup to complete, control-c when done
+
+ 
+nohup ./startIndexagent.sh & 		# Execute index agent script(&-means on background)
+
+tail -f nohup.out     			# Display message output & wait for JBoss startup to complete, control-c when done          
+
+
+ps -ef | grep -i search 		# Validate processes are running
+ps -ef | grep -i index			# Validate processes are running
+
+ps -ef & ps fuax |grep "X"               # DISPLAY ALL running_P processes"
+
+exit 					# Quit
+
+exit 					# Disconnect from server
+
+#########################################################################################
+
+# confirming jboss version 
+# use -V with the startup script
+
+run.sh  #script for linux &unix located in { $JBOSS_HOME/bin}
+
+cd $JBOSS_HOME/bin  
+./run.sh -V         # find version of jboss
+
+####################################################
+
+######################################################################
+
+
+cd $JBOSS_HOME/bin    		# cd /jbos-home/bin
+
+ ./run.sh -c production  	# Starting the JBoss EAP server on Unix or Linux
+
+ ./run.bat -c production	# Starting the JBoss EAP server on Windows
+
+##################################################################################
+
+
+##################################
+#  send a sign-of-life signal to the server once in a while
+#####################################################
+
+create it if the configuration file does not exist. 
+To send the signal every four minutes (240 seconds) to the remote host, 
+
+put the following in your "~/.ssh/config" file.
+Host remotehost:
+    HostName remotehost.com
+    ServerAliveInterval 240
+
+
+This is what I have in my "~/.ssh/config":
+
+echo "
+Host remotehost:
+    HostName remotehost.com
+    ServerAliveInterval 240
+	" >> ~/.ssh/config && chmod 600 ~/.ssh/config
+
+	
+	#########################
+# for all users { To enable it for all hosts use:
+Host *
+ServerAliveInterval 240
+}
+
+# one time solution 
+ssh -o ServerAliveInterval=60 myname@myhost.com
+
+# using alias (sshprod)
+alias sshprod='ssh -v -o ServerAliveInterval=60 myname@myhost.com'
+
+Now can connect like this:
+$ sshprod
+
+##############################
+# also keep ssh session alive by 
+vim /etc/ssh/sshd_config
+# add
+ClientAliveInterval 60
+ClientAliveCountMax 2
+#wq!
+###############################
+
+
+
+ps -p $CPID -o etime
+
+ps -p "processId" -o lstart # last restarted on 
+
+
+
+##################################################
+
+dmadmin  18877 18202  1 12:01 pts/1    00:00:00 grep webcache
+$ ps -p 2531 -o lstart
+
+
+                 STARTED
+Mon Aug 28 18:30:34 2017
+$ ps -p 2471 -o lstart
+
+
+                 STARTED
+Mon Aug 28 18:30:34 2017
+$ ps -ef | grep methods
+
+
+ ps -ef | grep -E 'methods|webcach|'  ## special
+ 
+
+ters=true -Dfile.encoding=UTF-8 -Duser.name=dmadmin
+dmadmin  19997 18202  0 12:26 pts/1    00:00:00 grep -i webcache
+$ ps -p 19888 -o lstart
+                 STARTED
+Wed Oct 11 12:25:15 2017
+
+
+
+###########################################
+/app/documentum/share/jboss7.1.1/server (DES)
+/app/documentum/dba/config/DESDOCP
+
+
+
+cd /app/documentum/share/jboss5.1.0/server
+
+> STOP WEBCACHE & METHODS 
+
+./
+
+./stopMethodServer.sh 
+
+# restart methods & webcache
+
+###########################################################################
+###############################################################################
+
+ps -ef | grep -i methods
+
+ps -ef | grep -i webcache
+
+
+cd /app/documentum/dba/config/DTIDOCP/
+
+
+##   /app/documentum/dba/config/CASDOCP
+
+mkdir -p /tmp/ldap
+
+cp -r ldap_0801ea5980021ef7.* /tmp/ldap/ 
+
+
+ls -l /tmp/ldap/
+total 16
+-rwx------. 1 dmadmin ecmteam 90 Oct 11 17:12 ldap_0801ea5980021ef7.cnt
+-rwx------. 1 dmadmin ecmteam 90 Oct 11 17:12 ldap_0801ea5980021ef7.cnt.old
+-rwx------. 1 dmadmin ecmteam 90 Oct 11 17:12 ldap_0801ea5980021ef7.cntt
+-rwx------. 1 dmadmin ecmteam 90 Oct 11 17:12 ldap_0801ea5980021ef7.cntt.old
+ 
+rm -f ldap_0801ea5980021ef7.*
+ ls -la
+
+#####################################################
+SET PASSWORD IN LDAP SYNC
+######################
+ls -la /app/documentum/dba/config/COVDOCP
+
+
+
+>> start #### methods back >>> 
+
+cd /app/documentum/share/jboss5.1.0/server/
+
+mv nohup.out nohup.out.bk1 
+
+nohup ./startMethodServer.sh & 
+
+tail -f nohup.out
+
+ps -ef | grep -i methods
+
+####################################################
+
+cd /app/documentum/dba/config/CASDOCP && 
+
+mv ldap_0801ea5980021ef7.cntt ldap_0801ea5980021ef7.cnt
+
+ ps -ef | grep -i methods
+
+##################################################
+# start ldap job 
+ldap sync 
+
+ON SERVER>>>>>>> 
+ mv ldap_0801ea5980021ef7.cntt ldap_0801ea5980021ef7.cnt
+
+
+-rwx------. 1 dmadmin ecmteam     90 Oct 11 17:15 ldap_0801ea5980021ef7.cnt
+-rwx------. 1 dmadmin ecmteam     90 Oct 11 17:15 ldap_0801ea5980021ef7.cntt.old
+
+
+start method server
+
+cd /app/documentum/share/jboss5.1.0/server/
+
+
+>> run the job >> 
+
+
+ls -la /app/documentum/dba/config/DTIDOCP/
+
+
+ ps -ef | grep -i methods
+
+ mv nohup.out nohup.out.bk1
+
+nohup ./startMethodServer.sh &
+
+tail -f nohup.out
+
+
+./startWEBCACHE.sh &
+##############################################################
+
+
+
+
+
+
+######################################
+cd /etc/logrotate.d
+
+
+&& vi $logname {
+
+/var/log/dracut.log {
+    missingok
+    notifempty
+    size 30k
+    yearly
+    create 0600 root root
+}
+
+
+
+}
+
+###################################
+
+/var/log/linuxserver/linux.log {
+        rotate 7
+        daily
+        compress
+        delaycompress
+        missingok
+        notifempty
+        create 660 linuxuser linuxuser } 
+
+#############################
+
+This config file will run daily,
+ create maximum 7 archives
+ owned by linuxuser and linuxuser with 660 permissions,
+
+compress all logs and exclude only yesterdays and empty log files
+
+
+######################################
+
+/app/documentum/station/chfash/backup {  
+
+
+rotate 7
+daily
+compress
+delaycompress
+missingok
+notifempty
+create 660 dmadmin ecmteam 
+
+postrotate
+echo "A rotation just took place." | mail -s meeeee.com
+endscript
+
+}
+
+
+
+
+
+
+
+
+
+/var/log/squid/access.log {
+monthly
+create 0644 root root
+rotate 5
+size=1M
+dateext
+dateformat -%d%m%Y
+notifempty
+mail gabriel@mydomain.com
+}
+
+
+
+postrotate
+echo "A rotation just took place." | mail root
+endscript
+}
+
+
+
+
+
+##############################################
+
+SOURCE_FOLDER="/app/documentum/station/chfash/backup"
+DESTINATION_FOLDER="/backup/"
+
+
+
+files=($(find /tmp/mallik3/ -mtime +"$days"))
+for files in ${files[*]}
+do
+     echo $files
+     zip $files-$(date --date="- "$days"days" +%F)_.zip $files
+      #       tar cvfz $(files)_$(date --date='-6months' +%F).tar.gz $files
+#       rm $files
+done
+
+
+
+
+files=($(find /var/log/ -mtime +7))
+tar cvfz backup.tar.gz "${files[@]}"
+
+
+
+# "${files[@]}" as opposed to ${files[*]}
+
+
+#!/bin/bash
+files=($(find /var/log/ -mtime -7))
+tar cvfz backup.tar.gz "${files[@]}"
+
+vi tarfiles
+
+PATH="/app/documentum/station/chfash/backup" 
+
+files=($(find $PATH -MTIME -7))
+
+echo "These files needs cleaning "${files[@]}"
+
+echo "done &Good!"
+
+
+
+
+###############################
+
+find -name "httpd-log*.txt" -type f -mtime +1 -exec tar -vzcf {}.gz {} \;
+
+
+ find $DIR -type f -name '*.zip' -mtime +30 -exec ls -ltr {} \;
+
+
+ find $DIR -type f -name '*.zip' -mtime +30 -exec tar -vzcf {}.gz {} \;
+
+
+
+CENTEST_5_FILES.zip
+Export_Nov_3_2016.zip
+Sample.zip
+_VendorDocs.zip
+$ rm -f cd /tmp
+
+
+##################################
+
+
+ls -l /app/documentum/station/chfash/backup
+total 7630564
+-rw-r--r--. 1 dmadmin ecmteam    4530334 Aug  8 09:28 CENTEST_5_FILES.zip
+-rw-r--r--. 1 dmadmin ecmteam    4523840 Oct  5 16:45 CENTEST_5_FILES.zip.gz
+-rw-r--r--. 1 dmadmin ecmteam 2834042800 Nov  9  2016 Export_Nov_3_2016.zip
+-rw-r--r--. 1 dmadmin ecmteam 2834048051 Oct  5 16:45 Export_Nov_3_2016.zip.gz
+-rw-r--r--. 1 dmadmin ecmteam     838616 Aug  8  2016 Sample.zip
+-rw-r--r--. 1 dmadmin ecmteam     838687 Oct  5 16:45 Sample.zip.gz
+-rw-r--r--. 1 dmadmin ecmteam 1067469386 Aug 18  2016 _VendorDocs.zip
+-rw-r--r--. 1 dmadmin ecmteam 1067374714 Oct  5 16:42 _VendorDocs.zip.gz
+
+
+
+find $DIR -type f -name '*.zip' -mtime +30 -exec tar -vzcf {}.gz {} \;
+
+find $DIR -type f -name '*.zip' -mtime +30 -exec tar -vzcf {}.gz {} \;
+
+GZIP="`find $DIR -type f -name '*.gz' -exec ls -ltr {} \;`"
+
+#echo $GZIP
+
+	if [ -z "$GZIP" ]; then 
+		echo "no files to gzip"; 
+		echo "cheking GZ files older than 30 days & deleting them !!!!"
+		DGZIP="`find $DIR -type f -name '*.zip' -mtime +30 -exec rm -f {} \;`"
+
+		echo $DGZIP
+		completion="`echo $?`"
+		echo "************************************************************"
+		 if [ "$completion" != "0" ]; then echo "files not deleted"; else echo "GZ files Deleted"; f
+				
+
+
+	else 
+		echo "files got gzipped"; fi
+
+
+echo " lastly deleting zipfiles older than 30 days"
+
+DGZIP="`find $DIR -type f -name '*.zip' -mtime +30 -exec rm -f {} \;`"
+
+echo "deleting copy of already gzipped files older than 30 days"
+
+	
+
+	
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+#!/bin/bash
+
+DIR="/app/documentum/station/chfash/backup"
+
+files=($(find $PATH -mtime -7))
+
+echo "These files needs cleaning "${files[@]}""
+
+echo "done &Good!"
+
+
+
+
+#!/bin/bash
+
+DIR="/app/documentum/station/chfash/backup"
+
+zipfiles="`find $DIR -type f -name '*.zip' -mtime +30 -exec ls -ltr {} \;`"
+
+echo "These files needs cleaning "${zipfiles[@]}""
+
+echo "done &Good!"
+
+
+$ echo $zipfiles
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+ find $DIR -name '*.zip'
+
+
+
+
+find $DIR -type f -name '*.zip' -mtime +3 -exec ls -ltr {} \;
+
+
+-rw-r--r--. 1 dmadmin ecmteam 1067469386 Aug 18  2016 /app/documentum/station/chfash/backup/_VendorDocs.zip
+-rw-r--r--. 1 dmadmin ecmteam 2834042800 Nov  9  2016 /app/documentum/station/chfash/backup/Export_Nov_3_2016.zip
+-rw-r--r--. 1 dmadmin ecmteam 4530334 Aug  8 09:28 /app/documentum/station/chfash/backup/CENTEST_5_FILES.zip
+-rw-r--r--. 1 dmadmin ecmteam 838616 Aug  8  2016 /app/documentum/station/chfash/backup/Sample.zip
+
+
+find $DIR -type f -name '*.zip' -mtime +30 -exec ls -ltr {} \;
+
+
+
+
+
+
+
+
+
+
+
+
+find $DIR -type f -name '*.zip' -mtime +30 -exec ls -ltr {}| xargs {} echo backup rotation | mail -s Fredrick.O.Were@dominionenergy.com \;
+
+
+
+ find $DIR -type f -name '*.zip' -mtime +30 | xargs ls -l \;
+
+
+
+
+
+
+find $DIR -name '*.zip' -mtime +3 -exec ls -ltr {} \;
+-rw-r--r--. 1 dmadmin ecmteam 1067469386 Aug 18  2016 /app/documentum/station/chfash/backup/_VendorDocs.zip
+-rw-r--r--. 1 dmadmin ecmteam 2834042800 Nov  9  2016 /app/documentum/station/chfash/backup/Export_Nov_3_2016.zip
+-rw-r--r--. 1 dmadmin ecmteam 4530334 Aug  8 09:28 /app/documentum/station/chfash/backup/CENTEST_5_FILES.zip
+-rw-r--r--. 1 dmadmin ecmteam 838616 Aug  8  2016 /app/documentum/station/chfash/backup/Sample.zip
+
+
+
+
+
+#.. Compress any logs older than 7 days, each morning.
+#.. Entry owned by Kris: x3416 Kris_at_some.email.org
+15 02 * * * /usr/local/myLogRoll
+
+
+
+
+#############################################
+#		: log rotation 
+# fwere			
+#		:oct, 2017
+#
+#
+#######################################################
+Installing Logrotate in Linux
+
+To install logrotate, just use your package manager:
+---------- On Debian and Ubuntu ---------- 
+# aptitude update && aptitude install logrotate 
+---------- On CentOS, RHEL and Fedora ---------- 
+# yum update && yum install logrotate
+
+
+
+
+
+#######################################
+
+Installing Logrotate in Linux
+
+To install logrotate, just use your package manager:
+---------- On Debian and Ubuntu ---------- 
+# aptitude update && aptitude install logrotate 
+---------- On CentOS, RHEL and Fedora ---------- 
+# yum update && yum install logrotate
+
+
+$ cat /etc/logrotate.conf
+# see "man logrotate" for details
+# rotate log files weekly
+weekly
+
+# keep 4 weeks worth of backlogs
+rotate 4
+
+# create new (empty) log files after rotating old ones
+create
+
+# use date as a suffix of the rotated file
+dateext
+
+# uncomment this if you want your log files compressed
+#compress
+
+# RPM packages drop log rotation information into this directory
+include /etc/logrotate.d
+
+# no packages own wtmp and btmp -- we'll rotate them here
+/var/log/wtmp {
+    monthly
+    create 0664 root utmp
+        minsize 1M
+    rotate 1
+}
+
+/var/log/btmp {
+    missingok
+    monthly
+    create 0600 root utmp
+    rotate 1
+}
+
+# system-specific logs may be also be configured here.
+$
+
+#######################################################
+
+cd /etc/logrotate.d/
+$ ll
+total 32
+-rw-r--r--. 1 root root 103 Sep 28  2012 dracut
+-rw-r--r--. 1 root root 180 Sep 22  2016 mcollective
+-rw-r--r--. 1 root root 329 Jul 10  2012 psacct
+-rw-r--r--. 1 root root 266 Sep 22  2016 pxp-agent
+-rw-r--r--. 1 root root 237 Jun 22  2015 sssd
+-rw-r--r--. 1 root root 210 May 17  2012 syslog
+-rw-r--r--. 1 root root  32 Apr  8  2010 up2date
+-rw-r--r--. 1 root root 100 May  9  2012 yum
+$ cat dracut
+/var/log/dracut.log {
+    missingok
+    notifempty
+    size 30k
+    yearly
+    create 0600 root root
+}
+
+$ cat mcollective
+/var/log/puppetlabs/mcollective.log {
+    missingok
+    notifempty
+    sharedscripts
+    postrotate
+        /etc/init.d/mcollective restart >/dev/null 2>&1 || true
+    endscript
+}
+
+
+$ cat psacct
+# Logrotate file for psacct RPM
+
+/var/account/pacct {
+#prerotate loses accounting records, let's no
+#   prerotate
+#       /usr/sbin/accton
+#   endscript
+    compress
+    delaycompress
+    notifempty
+    daily
+    rotate 31
+    create 0600 root root
+    postrotate
+       /usr/sbin/accton /var/account/pacct
+    endscript
+}
+
+cat pxp-agent
+/var/log/puppetlabs/pxp-agent/*.log {
+    daily
+    missingok
+    rotate 30
+    compress
+    notifempty
+    sharedscripts
+    postrotate
+        if [ -s /var/run/puppetlabs/pxp-agent.pid ]; then kill -USR2 `cat /var/run/puppetlabs/pxp-agent.pid`; fi
+    endscript
+}
+
+
+$ cat syslog
+/var/log/cron
+/var/log/maillog
+/var/log/messages
+/var/log/secure
+/var/log/spooler
+{
+    sharedscripts
+    postrotate
+        /bin/kill -HUP `cat /var/run/syslogd.pid 2> /dev/null` 2> /dev/null || true
+    endscript
+}
+$
+
+
+
+########################################################################
+
+
+/var/log/httpd/*log {
+    missingok
+    notifempty
+    sharedscripts
+    postrotate
+    /sbin/service httpd reload > /dev/null 2>/dev/null || true
+    endscript
+  }
+
+#  it checks for any files in /var/log/httpd that end in log
+
+# If it checks the httpd directory and doesn’t find any log files, it doesn’t generate an error
+
+# Then it runs the command in the postrotate/endscript block 
+in this case, a command that tells Apache to restart), but only after it has processed all the specified logs.
+
+The commands in logrotate.conf act as defaults for log rotation
+
+you might want to include a daily command in Apache’s configuration block so that Apache’s
+ logs will rotate daily instead of the default weekly rotation.
+
+Remember, the configuration files for applications in /etc/logrotate.d inherit their defaults from the main /etc/logrotate.conf file.
+
+
+a wildcard in the name or by separating log files in the list 
+
+
+
+file /var/bar/log.txt, you would set up the block as follows:
+ /var/foo/*.log /var/bar/log.txt {
+        rotate 14
+        daily
+        compress
+        delaycompress
+        sharedscripts
+        postrotate
+                /usr/sbin/apachectl graceful > /dev/null
+        Endscript
+}
+
+
+
+The rotate command determines how many archived logs are returned before logrotate starts deleting the older ones. For example:
+rotate 4
+
+The rotate command determines how many archived logs are returned before logrotate starts deleting the older ones. For example:
+rotate 4This command tells logrotate to keep four archived logs at a time
+
+If four archived logs exist when the log is rotated again, the oldest one is deleted to make room for the new archive.
+
+
+Rotation interval
+
+You can specify a command that tells logrotate how often to rotate a particular log. The possible commands include:
+daily
+weekly
+monthly
+yearly
+
+
+
+If you want to use a time interval other than the the defined ones,
+ you need to use cron to create a separate configuration file.
+ For example, if you want to rotate a particular log file 
+you could create a file in /etc/cron.hourly (you might need to create that directory too)
+ that would contain a line like the following:
+/usr/sbin/logrotate /etc/logrotate.hourly.conf
+
+
+
+
+Then you would put the configuration for that hourly run of logrotate
+ (the log file location, whether or not to compress old files, and so on) 
+into /etc/logrotate.hourly.conf.
+
+
+
+size
+The format of the command tells logrotate what units you’re using to specify the size:
+size 100k
+size 100M
+size 100G
+
+
+
+Compression
+
+If you want archived log files to be compressed (in gzip format), you can include the following command, usually in /etc/logrotate.conf:
+compress
+
+
+Compression is normally a good idea, because log files are usually all text and text compresses well
+
+Compression is normally a good idea, because log files are usually all text and text compresses well > #you dont want them compressed 
+
+
+Another command of note in regard to compression is as follows:
+delaycompress
+
+When delaycompress is active, an archived log is compressed the next time that the log is rotated. 
+
+This can be important when you have a program that might still write to its old log file for a time after a fresh one is rotated in. Note that delaycompress works only if you have compress in your configuration.
+
+
+delaycompress would be when logrotate is told to restart Apache with graceful” or “reload” directive
+
+Because old Apache processes do not end until their connections are finished,
+
+they could potentially try to log more items to the old file for some time after the restart.
+ Delaying the compression ensures that you won’t lose those extra log entries when the logs are rotated.
+
+
+
+
+Postrotate
+
+You usually want to use this script to restart an application after the log rotation so that the app can switch to a new log.
+postrotate
+    /usr/sbin/apachectl restart > /dev/null
+endscript
+
+
+>/dev/null tells logrotate to pipe the command’s output to nowhere
+
+you don’t need to view the the output if the application restarted correctly.
+
+
+Sharedscripts
+
+For example, a web server configuration block that refers to both the access log and the error log will, 
+if it rotates both, run the postrotate script twice (once for each file rotated). If both files are rotated, the web server is restarted twice.
+
+To keep logrotate from running that script for every log, you can include the following command:
+sharedscripts
+
+
+Finally, you can experiment with the log rotation (outside of the usual cron job) by forcing an execution of the logrotate in the absence of any log files to rotate.
+logrotate -f /etc/logrotate.d/linuxserver 
+
+[carol@octarine ~/testdir] cat archiveoldstuff.sh
+#!/bin/bash
+
+# This script creates a subdirectory in the current directory, to which old
+# files are moved.
+# Might be something for cron (if slightly adapted) to execute weekly or 
+# monthly.
+
+ARCHIVENR=`date +%Y%m%d`
+DESTDIR="$PWD/archive-$ARCHIVENR"
+
+mkdir "$DESTDIR"
+
+# using quotes to catch file names containing spaces, using read -d for more 
+# fool-proof usage:
+find "$PWD" -type f -a -mtime +5 | while read -d $'\000' file
+
+do
+gzip "$file"; mv "$file".gz "$DESTDIR"
+echo "$file archived"
+done
+
+#############################################
+#wisom script 
+
+#!/bin/bash
+
+# This script provides wisdom
+# You can now exit in a decent way.
+
+FORTUNE=/usr/games/fortune
+
+while true; do
+echo "On which topic do you want advice?"
+echo "1.  politics"
+echo "2.  startrek"
+echo "3.  kernelnewbies"
+echo "4.  sports"
+echo "5.  bofh-excuses"
+echo "6.  magic"
+echo "7.  love"
+echo "8.  literature"
+echo "9.  drugs"
+echo "10. education"
+echo
+
+echo -n "Enter your choice, or 0 for exit: "
+read choice
+echo
+
+case $choice in
+     1)
+     $FORTUNE politics
+     ;;
+     2)
+     $FORTUNE startrek
+     ;;
+     3)
+     $FORTUNE kernelnewbies
+     ;;
+     4)
+     echo "Sports are a waste of time, energy and money."
+     echo "Go back to your keyboard."
+     echo -e "\t\t\t\t -- \"Unhealthy is my middle name\" Soggie."
+     ;;
+     5)
+     $FORTUNE bofh-excuses
+     ;;
+     6)
+     $FORTUNE magic
+     ;;
+     7)
+     $FORTUNE love
+     ;;
+     8)
+     $FORTUNE literature
+     ;;
+     9)
+     $FORTUNE drugs
+     ;;
+     10)
+     $FORTUNE education
+     ;;
+     0)
+     echo "OK, see you!"
+     break
+     ;;
+     *)
+     echo "That is not a valid choice, try a number from 0 to 10."
+     ;;
+esac  
+done
+
+#######################################################
+
+
+[carol@octarine ~/test] cat tolower.sh
+#!/bin/bash
+
+# This script converts all file names containing upper case characters into file# names containing only lower cases.
+
+LIST="$(ls)"
+
+for name in "$LIST"; do
+
+if [[ "$name" != *[[:upper:]]* ]]; then
+continue
+fi
+
+ORIG="$name"
+NEW=`echo $name | tr 'A-Z' 'a-z'`
+
+mv "$ORIG" "$NEW"
+echo "new name for $ORIG is $NEW"
+done
+
+################################################################
+
+
+in a while loop with a test condition of (( $# )). This condition is true as long as the number of arguments is greater than zero. The $1 variable and the shift statement process each argument. The number of arguments is reduced each time shift is executed and eventually becomes zero, upon which the while loop exits.
+
+The example below, cleanup.sh, uses shift statements to process each file in the list generated by find:
+#################################
+
+#!/bin/bash
+
+# This script can clean up files that were last accessed over 365 days ago.
+
+USAGE="Usage: $0 dir1 dir2 dir3 ... dirN"
+
+if [ "$#" == "0" ]; then
+	echo "$USAGE"
+	exit 1
+fi
+
+while (( "$#" )); do
+
+if [[ $(ls "$1") == "" ]]; then 
+	echo "Empty directory, nothing to be done."
+  else 
+	find "$1" -type f -a -atime +365 -exec rm -i {} \;
+fi
+
+shift
+
+done
+
+ ##################################
+
+
+API command:
+
+########################################################################
+retrieve,c,dm_user where user_os_name = 'jonat06'
+set,c,l,user_global_unique_id
+mbulogin:mbulogin:800a74c24fe1b242bdb704eeb336ffda
+set,c,l,user_name
+Jonathan A Kinney (Energy - 2)
+set,c,l,user_coc_group
+CoC: 02
+save,c,l
+
+#####################################################
+
+mbulogin:800a74c24fe1b242bdb704eeb336ffda
+mbulogin:800a74c24fe1b242bdb704eeb336ffda
+
+
+API>retrieve,c,dm_user where user_os_name = 'jonat06'
+...
+1101ea5980001953
+API>set,c,l,user_global_unique_id
+SET>mbulogin:mbulogin:800a74c24fe1b242bdb704eeb336ffda
+...
+OK
+API>set,c,l,user_name
+SET>Jonathan A Kinney (Energy - 2)
+...
+OK
+API>set,c,l,user_coc_group
+SET>CoC: 02
+...
+OK
+API>save,c,l
+...
+OK
+###################################################################
+user group > find in report
+
+
+ [http-0.0.0.0-9080-7]: Member User "James J Myers (Energy - 2)" retained in group "app_dctmdtiengread_2"
+2017-10-11 04:03:51:44 EDT [http-0.0.0.0-9080-7]: ---------------------------------------------------------------------------------
+2017-10-11 04:03:51:44 EDT [http-0.0.0.0-9080-7]: Processing group member 369: CN=JONAT06,OU=Users,OU=Common,DC=mbu,DC=ad,DC=dominionnet,DC=com in group "app_dctmdtiengread_2"
+2017-10-11 04:03:51:44 EDT [http-0.0.0.0-9080-7]: INFO: Processing member - CN=JONAT06,OU=Users,OU=Common,DC=mbu,DC=ad,DC=dominionnet,DC=com
+2017-10-11 04:03:51:68 EDT [http-0.0.0.0-9080-7]: 	objectClass:
+2017-10-11 04:03:51:68 EDT [http-0.0.0.0-9080-7]: 		top
+
+
+
+# new project 
+###################################################
+
+case "$1" in
+        start)
+            start
+            ;;
+         
+        stop)
+            stop
+            ;;
+         
+        status)
+            status anacron
+            ;;
+        restart)
+            stop
+            start
+            ;;
+        condrestart)
+            if test "x`pidof anacron`" != x; then
+                stop
+                start
+            fi
+            ;;
+         
+        *)
+            echo $"Usage: $0 {start|stop|restart|condrestart|status}"
+            exit 1
+ 
+esac
+
+=====================================================================
+
+cat showparams.sh
+#!/bin/bash
+                                                                                
+echo "This script demonstrates function arguments."
+echo
+                                                                                
+echo "Positional parameter 1 for the script is $1."
+echo
+                                                                                
+test ()
+{
+echo "Positional parameter 1 in the function is $1."
+RETURN_VALUE=$?
+echo "The exit code of this function is $RETURN_VALUE."
+}
+                                                                                
+test other_param
+
+[lydia@cointreau ~/test] ./showparams.sh parameter1
+This script demonstrates function arguments.
+ 
+Positional parameter 1 for the script is parameter1.
+ 
+Positional parameter 1 in the function is other_param.
+The exit code of this function is 0.
+##################################################
+###########################################################
+
+#set the path for the root and other users:
+#######################################################
+
+#/etc/profile file
+
+
+pathmunge () {
+        if ! echo $PATH | /bin/egrep -q "(^|:)$1($|:)" ; then
+           if [ "$2" = "after" ] ; then
+              PATH=$PATH:$1
+           else
+              PATH=$1:$PATH
+           fi
+        fi
+}
+
+# Path manipulation
+if [ `id -u` = 0 ]; then
+        pathmunge /sbin
+        pathmunge /usr/sbin
+        pathmunge /usr/local/sbin
+fi
+
+pathmunge /usr/X11R6/bin after
+
+unset pathmunge
+
+
+#######################################################################################
+#Bucku[ps 
+#########################################################
+
+#On Sunday, only bupbash is executed.
+#############################################################################################
+
+#/bin/bash
+
+LOGFILE="/nethome/tille/log/backupscript.log"
+echo "Starting backups for `date`" >> "$LOGFILE"
+
+buplinux()
+{
+DIR="/nethome/tille/xml/db/linux-basics/"
+TAR="Linux.tar"
+BZIP="$TAR.bz2"
+SERVER="rincewind"
+RDIR="/var/www/intra/tille/html/training/"
+
+cd "$DIR"
+tar cf "$TAR" src/*.xml src/images/*.png src/images/*.eps
+echo "Compressing $TAR..." >> "$LOGFILE"
+bzip2 "$TAR"
+echo "...done." >> "$LOGFILE"
+echo "Copying to $SERVER..." >> "$LOGFILE"
+scp "$BZIP" "$SERVER:$RDIR" > /dev/null 2>&1
+echo "...done." >> "$LOGFILE"
+echo -e "Done backing up Linux course:\nSource files, PNG and EPS images.\nRubbish removed." >> "$LOGFILE"
+rm "$BZIP"
+}
+
+bupbash()
+{
+DIR="/nethome/tille/xml/db/"
+TAR="Bash.tar"
+BZIP="$TAR.bz2"
+FILES="bash-programming/"
+SERVER="rincewind"
+RDIR="/var/www/intra/tille/html/training/"
+
+cd "$DIR"
+tar cf "$TAR" "$FILES"
+echo "Compressing $TAR..." >> "$LOGFILE"
+bzip2 "$TAR"
+echo "...done." >> "$LOGFILE"
+echo "Copying to $SERVER..." >> "$LOGFILE"
+scp "$BZIP" "$SERVER:$RDIR" > /dev/null 2>&1
+echo "...done." >> "$LOGFILE"
+
+echo -e "Done backing up Bash course:\n$FILES\nRubbish removed." >> "$LOGFILE"
+rm "$BZIP"
+}
+
+DAY=`date +%w`
+
+if [ "$DAY" -lt "2" ]; then
+  echo "It is `date +%A`, only backing up Bash course." >> "$LOGFILE"
+  bupbash
+else
+  buplinux
+  bupbash
+fi
+
+ 
+#############################################
+==============================================
+
+Removing rubbish upon exit
+
+#The whatis command relies on a database which is regularly built using the makewhatis.cron script with cron:
+
+
+#!/bin/bash
+
+LOCKFILE=/var/lock/makewhatis.lock
+
+# Previous makewhatis should execute successfully:
+
+[ -f $LOCKFILE ] && exit 0
+
+# Upon exit, remove lockfile.
+
+trap "{ rm -f $LOCKFILE ; exit 255; }" EXIT
+
+touch $LOCKFILE
+makewhatis -u -w
+exit 0
+
+ ###########################################
+ ######################################################
+
+#!/bin/sh
+
+OP=$1
+
+if [ "$1" == "-a" ]; then
+	ID=$2
+	FIRST=$3
+	LAST=$4
+	AGE=$5
+	
+	echo "$ID,$FIRST,$LAST,$AGE" >> users.dat
+	echo "User Added"
+	
+elif [ "$1" == "-l" ]; then
+	cat users.dat
+fi
+
+
+nohup syntax:
+# nohup command-with-options &   
+
+# you don’t want to be connected to the shell and waiting for the command to complete
+nohup.out file
+
+###################################
+
+# The standard output will be redirected to nohup.out file in the current directory
+# standard error will be redirected to stdout, thus it will also go to nohup.out
+# nohup.out will contain both standard output and error messages from 
+Instead of using nohup.out, you can also redirect the output to a file using the normal shell redirections.
+
+Example: Printing lines to both standard output & standard error
+while(true)
+do
+echo "standard output"
+echo "standard error" 1>&2 
+sleep 1;
+done
+
+###########################################
+Execute the script without redirection
+$ nohup sh custom-script.sh &
+[1] 12034
+$ nohup: ignoring input and appending output to `nohup.out'
+
+$ tail -f nohup.out
+standard output
+standard error
+
+
+###########################
+
+
+Execute the script without redirection
+$ nohup sh custom-script.sh &
+[1] 12034
+$ nohup: ignoring input and appending output to `nohup.out'
+
+$ tail -f nohup.out
+standard output
+standard error
+
+
+#######################################
+ps aux | grep sathiya 
+sathiya  12034  0.0  0.1   4912  1080 pts/2    S    14:10   0:00 sh custom-script.sh
+
+
+###################################
+# RUNNING SCRIPT & NOHUP OUT 
+
+For bash and those other shells, do this instead:
+$ nohup ./script.sh & tail -f nohup.out   # GIVES ERROR tail: nohup.out: No such file or directory)
+# THATS BECAUSE THE SCRIPT TERMINATES BEFORE THE NOHUP.OUT IS GENERATED 
+# SOLUTION FOR THIS IS 
+
+> 
+To work around this:
+$ nohup ./script.sh & sleep 1 && tail -f nohup.out
+
+or, if you don't like waiting for a second:
+$ nohup ./script.sh & while ! test -f nohup.out; do :; done && tail -f nohup.out
+
+or, as "VPfB" points out in the comments below,
+$ nohup ./script.sh >output & tail -f output
+
+
+
+##################################################
+nohup nodemon --dump server/server.js &
+
+man nohup
+
+paraeter may not run at all. Once the command specified by the Command parameter starts, logging off does not affect it.
+
+3.To run more than one command, use a shell procedure. For example, if you write the shell procedure: neqn math1 | nroff > fmath1
+
+and name it the nnfmath1  file, you can run the nohup command for all of the commands in the nnfmath1  file with the command: 
+nohup sh nnfmath1
+
+4.If you assign execute permission to the nnfmath1  file, you get the same results by issuing the command: nohup nnfmath1
+
+5.To run the nnfmath1  file in the background, enter: nohup nnfmath1  &
+
+We use > /dev/null 2>&1  to redirect normal output and errors to /dev/null.
+
+
+
+
+
+
+===================================
+
+hi!
+ I am running a script in side another script as below:
+
+#!/usr/bin/ksh
+ ###########################################################################################################################
+ #Purpose:Script for:Running test on diffrent AIX lpars
+ ###########################################################################################################################
+ clear
+ i=0
+ cat list.txt | while read LINE
+ do
+ i=$((i+1))
+ echo “Running CloseCase on host:$LINE”
+sshcmd -s $LINE “cd /appl/prachi/script/;nohup sh ./runCloseCaseManually.sh closeCases$i.csv &”
+done
+
+the .csv files are taken as inputs here with i as the serial order in their naming conventions.. i want to run 1 CSV file at one lpar so i have mentioned the lpars under list.txt. The nohup i have used here is still not helping me and is being killed as it moves on to next lpar in the loop.
+
+####################################################
+
+
+case "$1" in 
+     'start') 
+             start 
+             ;; 
+     'stop') 
+             stop 
+             ;; 
+     'restart') 
+             stop ; echo "Sleeping..."; sleep 1 ; 
+             start 
+             ;; 
+     'status') 
+             status 
+             ;; 
+     *) 
+             echo 
+             echo "Usage: $0 { start | stop | restart | status }" 
+             echo 
+             exit 1 
+             ;; 
+ esac 
+ 
+ 
+ exit 0 
+
+
+#########################################
+
+
+By default 'nohup' logs to "~/nohup.out" so list open files: "lsof -w -n | awk '/nohup.out/ {print $2, "("$1")"}'", for amount remove the ", "("$1")"" part and add "|sort|uniq|wc -l".
+
+
+
+
+You can add some stuff to the end of unSpawn's command to call ps to get the command. Here I output a list of process ID and command. Just omit the "pid," from the -o option argument to print only the command:
+
+lsof $HOME/nohup.out |awk '!/^COMMAND/ { print $2 }' |sort -u |while read pid; do ps h -p $pid -o pid,command; done
+
+
+
+lsof $HOME/nohup.out \
+  |awk '!/^COMMAND/ { print $2 }' \
+  |sort -u \
+  |while read pid; do 
+      ps h -p $pid -o pid,command
+   done
+
+
+SCRIPTPATH="/app/documentum/xPlore/jboss5.1.0/server"
+
+Rprocess="`ps -ef | grep search`"
+
+
+cd $SCRIPTPATH && $(Rprocess)
+
+# CPID="`grep process ID of $(Rprocess)"
+"........pending code 
+
+DAYSUP="`ps -p $CPID -o etime`"   #{display how long that process has been running}
+
+# display message output
+msg = "Server process is running successfully"
+msg2 = "Server process has ben up for $(DAYSUP)"	
+
+
+Server STATUS = "OK"
+
+# ELSE 
+msg = "Surch Process id not running ...the service needs Immediate restart"
+msg2 = "the surver process was last restarted on $(DAYSUP)"
+MSG3 = "Please Execute stopPrimaryDsearch.sh to stop the search agent, then Execute startPrimaryDsearch.sh to bring it back up"
+
+
+
+# send message notification to yourself 
+
+/root/myscript.sh 2>&1 | tee output.txt | mail -s "Email subject" me@mymail.com  # mailing script output 
+
+/root/myscript.sh 2>&1 | tee output.txt | mail -s "Email subject" me@mymail.com
+
+
+#######################################
+
+# 	command > file.tmp
+#	if [ -s file.tmp ]
+#	then
+#       		mailx -s "Subject" mailaddress <file.tmp
+#	fi
+#	rm file.tmp
+
+##########################################################
+
+echo "Your message" | mail -s "Message Subject" email@address
+echo "Message" | mail -s "Subject" -a /loc/to/attachment.txt email@address
+
+
+
+
+which sendmail
+/usr/sbin/sendmail
+
+echo "Subject: sendmail test" | sendmail -v my@email.com
+
+
+
+
+awk -v q1="$QUERY1" -v q2="$QUERY2" 'END {split(q1,q1arr);print "Total items: " q1arr[1] "\nTotal Error: " q1arr[2] "\nPercentage: " q2 }' /dev/null | mail -s "subject" toUser1@xyz.com,toUser2@abc.com
+
+echo "hello world" | mail -s "a subject" someone@somewhere.com
+
+
+
+# mail options 
+
+command; echo "Process done" | mail -s "Process done" mail@domain.tld
+
+{ command; echo Done; } | mail -s "subject" recipient@example.com
+
+sleep 30 && echo "Process done" | mail -s "Process done" mail@domain.tld &
+
+xargs -n 1 "rsh {} snapmirror status | mail your@address " < netapps  
+
+###############################################################
+
+#!/bin/bash
+CURRENT=$(df / | grep / | awk '{ print $5}' | sed 's/%//g')
+THRESHOLD=90
+
+if [ "$CURRENT" -gt "$THRESHOLD" ] ; then
+    mail -s 'Disk Space Alert' mailid@domainname.com << EOF
+Your root partition remaining free space is critically low. Used: $CURRENT%
+EOF
+fi
+
+######################################
+MAILX='mailx'
+
+MAILTO='monitor@gmail.com'
+
+SUBJECT="$DIR disk usage"
+
+du -sh ${DIR}/* | $MAILX -s "$SUBJECT" "$MAILTO"
+
+
+###################################
+startDTI_Indexagent.sh
+ startPrimaryDsearch.sh
+ stopDTI_Indexagent.sh
+ stopPrimaryDsearch.sh
+
+
+############################
+
+ps -p "processId" -o lstart # last restarted on 
+
+who -b # last reboot 
+
+
+
+
+
+
+
+
+
+
+
+# -x: Display the system shutdown entries and run level changes
+
+last -x|grep shutdown | head -1   # last shutdown (date & time)
+
+last -x reboot  # reboot 
+
+uptime -s # system has been up since 
+
+#	2017-06-20 17:41:51
+
+# $ ps -eo pid,cmd,etime
+  PID CMD                             ELAPSED
+ 1218 /usr/lib/iceweasel/firefox-bin -  2-16:04:45
+
+
+ exact time 
+
+$ ps axo pid,cmd,etime
+ # PID CMD                             ELAPSED
+  
+# 1218 /usr/lib/iceweasel/firefox-bin -  2-16:04:57 
+
+# get process pid (ps faux ) $$ ls -ld /dir/pid
+
+
+# 
+ 
+ 
+who -b | cut -d' ' -f13 # date only
+
+
+(echo ' Currently:' | tr "\n" ' ' ; date +"%Y-%m-%d %k:%M:%S" ; echo '  Up Since:' | tr '\n' ' ' 
+
+(echo ' Currently:' | tr "\n" ' ' ; date +"%Y-%m-%d %k:%M:%S" ; echo '  Up Since:' | tr '\n' ' ' ; uptime -s ; echo '  Duration:' | tr '\n' ' ' ; uptime -p)
+
+
+########################
+# Currently: 2016-05-09  9:06:29
+#  Up Since: 2016-05-04 12:56:04
+# Duration: up 4 days, 20 hours, 10 minutes
+########################################
+
+ps aux | grep SNMPME
+
+PID=$(pidof pidgin)
+STARTTIME=$(awk '{print int($22 / 100)}' /proc/$PID/stat)
+UPTIME=$(awk '{print int($1)}' /proc/uptime)
+NOW=$(date +%s)
+DIFF=$((NOW - (UPTIME - STARTTIME)))
+date -d @$DIFF
+
+
+
+ps -p YOURPID -o lstart=  #last restart
+
+#	 Mon Dec 14 17:17:16 2009
+
+
+
+ps -p `pgrep openvpn` -o lstart=  # grep when it was last restarted 
+
+# find a process in ps based listening ports
+
+# ps -ef | grep `lsof  -i :7001 | grep "LISTEN"|awk '{print $2}'` # based on listening port 
+
+
+
+initctl list # see whats running on your system 
+
+
+
+#################################################################
+#
+#     Program    : qa.RUNNING_index_PROCESS
+#                : Fredrick Were
+#                : sEPT 2017
+#		 : Inprogress........(****) 
+#
+#################################################################
+
+
+awk '
+
+function lineout(status, progname, message){
+      status = "["status"]"
+      printf("%-8s %-29s %s\n", status, progname, message)
+      }
+
+BEGIN {
+      progname ="CHECK.index.process"
+
+      #cmd = sprintf("%s", "rpm -qa | grep index | wc -l")
+
+	cmd = "ps -ef | grep -i index | wc -l"
+	cmd | grep x 
+	close(cmd)
+
+	if (x==1) {
+		status = "OK"
+			msg = "Index process is running."
+		}
+	else {
+		cmd = sprintf("%s", "ps faux | grep search" | wc -l")
+		cmd | getline x 
+		close (cmd) 
+	 if (x ==1) {
+		status = "WARNING"
+			print "Validating indexing process further"
+			cmd1 = sprintf("pidof index")
+			cmd2 = sprintf("ps -p $(cmd1) -o pid,cmd,etime,uid,gid 2>1 > /dev/null && echo $?")
+			cmd2 | getline inst
+			close (cmd2)
+		if (inst==1) { print "Error in validating index processes." }
+			msg = "Index process is running $(cmd2)"
+		}
+      }
+      lineout(status, progname, msg)
+}
+
+'
+
+
+
+awk '
+
+function lineout(status, progname, message){
+      status = "["status"]"
+      printf("%-8s %-29s %s\n", status, progname, message)
+      }
+
+BEGIN {
+      progname ="fix.linux.syslog"
+
+      #cmd = sprintf("%s", "rpm -qa | grep rsyslog | wc -l")
+      cmd = "rpm -qa | grep rsyslog | wc -l"
+      cmd | getline x
+      close (cmd)
+      if (x==1) {
+        status = "OK"
+                msg = "rsyslog is installed."
+        }
+      else {
+                cmd = sprintf("%s", "rpm -qa | grep sysklog | wc -l")
+                cmd | getline x
+                close (cmd)
+        if (x==1) {
+                status = "WARN"
+                        print "Installing rsyslog..."
+                        cmd = sprintf("yum -y install rsyslog.`uname -m` 2>1 > /dev/null && echo $?")
+                        cmd | getline inst
+                        close (cmd)
+                if (inst==1) { print "Error in installing rsyslog." }
+
+      #                 cmd1 = sprintf("cat /etc/syslog.conf | grep -v ^# | grep debug >> /etc/rsyslog.conf && echo $?")
+        #               cmd1 | getline cf
+        #               close (cmd1)
+      #         if (cf==1) { print "Error in appending debug to rsyslog.conf" }
+
+                        cmd2 = sprintf("/sbin/service syslog stop ; /sbin/chkconfig syslog off ; echo $?")
+                        cmd2 | getline z
+                        close (cmd2)
+                if (z==1) { print "Error in deconfiguring syslog." }
+
+                        cmd3 = sprintf("/sbin/service rsyslog start ; /sbin/chkconfig rsyslog on ; echo $?")
+                        cmd3 | getline y
+                        close (cmd3)
+                if (y==1) { print "Error in starting rsyslog." }
+
+                        msg = "Installed rsyslog."
+                }
+      }
+      lineout(status, progname, msg)
+}
+
+'
+sda, sdb ---> here it is SAN disks.
+
+ cat /proc/partitions
+major minor  #blocks  name
+
+   8        0   52428800 sda
+   8        1     512000 sda1
+   8        2   51915776 sda2
+   8       16  367001600 sdb
+   8       32   83886080 sdc
+   8       33   83886079 sdc1
+ 253        0   16023552 dm-0
+ 253        1   16023552 dm-1
+ 253        2   83886080 dm-2
+ 253        3  344973312 dm-3
+ 253        4   11534336 dm-4
+ 253        5   10485760 dm-5
+ 253        6   16023552 dm-6
+
+
+# internal >> nfshome.dominionnet.com:/vol/homevol/qt/fredr05-sa  2.6T  2.4T  150G  95% /home/fredr05-sa
+ 
+
+so this "sddlmab" is also a SAN disk.
+
+##################################################
+
+NAS mount as NFS type and would include the name of the server from which they are accessed.
+
+nfshome.dominionnet.com:/vol/homevol/qt/fredr05-sa  2.6T  2.4T  150G  95% /home/fredr05-sa
+
+###########################################
+
+
+dmesg | grep -i "attached "
+[   10.901208] sd 0:0:0:0: [sda] Attached SCSI disk
+[   10.902723] sd 0:0:1:0: [sdb] Attached SCSI disk
+[   11.081754] sr 2:0:0:0: Attached scsi CD-ROM sr0
+[   14.712883] sd 0:0:0:0: Attached scsi generic sg0 type 0
+[   14.716239] sd 0:0:1:0: Attached scsi generic sg1 type 0
+[   14.721452] sr 2:0:0:0: Attached scsi generic sg2 type 5
+
+
+
+It gives the required partitions on LUN with scsi information, compare it with o/p 
+
+of /proc/scsi/scsi LUN's , 
+
+you wil get to know that sdb,sdc and sdd are SAN disks
+
+ cat /proc/partitions
+major minor  #blocks  name
+
+   8        0   52428800 sda
+   8        1     512000 sda1
+   8        2   51915776 sda2
+   8       16  367001600 sdb
+   8       32   83886080 sdc
+   8       33   83886079 sdc1
+ 253        0   16023552 dm-0
+ 253        1   16023552 dm-1
+ 253        2   83886080 dm-2
+ 253        3  344973312 dm-3
+ 253        4   11534336 dm-4
+ 253        5   10485760 dm-5
+ 253        6   16023552 dm-6
+
+########################################################
+
+SPACE NEEDED FOR DES(PROD > ojrplecm29.dominionnet.com) 
+
+/dev/mapper/datadg-documentum_data ext4   472G  365G  103G  79% /app/documentum/data
+
+
+#################################################################
+################################################################
+#
+#     commands   : send_mail_linux
+#                : Fredrick Were
+#                : Sept 2017
+#                    : Updated .... 
+#
+#################################################################
+
+
+
+# send message notification to yourself 
+
+/root/myscript.sh 2>&1 | tee output.txt | mail -s "Email subject" me@mymail.com  # mailing script output 
+
+/root/myscript.sh 2>&1 | tee output.txt | mail -s "Email subject" me@mymail.com
+
+#######################################
+
+# 	command > file.tmp
+#	if [ -s file.tmp ]
+#	then
+#       		mailx -s "Subject" mailaddress <file.tmp
+#	fi
+#	rm file.tmp
+
+##########################################################
+
+echo "Your message" | mail -s "Message Subject" email@address
+echo "Message" | mail -s "Subject" -a /loc/to/attachment.txt email@address
+
+
+
+
+which sendmail  		# locate the path 
+#				/usr/sbin/sendmail
+#######################################################################
+
+
+echo "Subject: sendmail test" | sendmail -v my@email.com
+echo "hello world" | mail -s "a subject" someone@somewhere.com
+
+#######################################################################	
+
+awk -v q1="$QUERY1" -v q2="$QUERY2" 'END {split(q1,q1arr);print "Total items: " q1arr[1] "\nTotal Error: " q1arr[2] "\nPercentage: " q2 }' /dev/null | mail -s "subject" toUser1@xyz.com,toUser2@abc.com
+
+############################################################
+
+
+
+
+# mail options 
+
+command; echo "Process done" | mail -s "Process done" mail@domain.tld
+
+{ command; echo Done; } | mail -s "subject" recipient@example.com
+
+sleep 30 && echo "Process done" | mail -s "Process done" mail@domain.tld &
+
+xargs -n 1 "rsh {} snapmirror status | mail your@address " < netapps  
+
+###############################################################
+
+#!/bin/bash
+CURRENT=$(df / | grep / | awk '{ print $5}' | sed 's/%//g')
+THRESHOLD=90
+
+if [ "$CURRENT" -gt "$THRESHOLD" ] ; then
+    mail -s 'Disk Space Alert' mailid@domainname.com << EOF
+Your root partition remaining free space is critically low. Used: $CURRENT%
+EOF
+fi
+
+##########################i############
+MAILX='mailx'
+
+MAILTO='monitor@gmail.com'
+
+SUBJECT="$DIR disk usage"
+
+du -sh ${DIR}/* | $MAILX -s "$SUBJECT" "$MAILTO"
+###########################################################################
+
+: ${HOSTNAME?} ${USER?} ${HOME?} ${MAIL?}
+echo
+echo "Name of the machine is $HOSTNAME."
+echo "You are $USER."
+echo "Your home directory is $HOME."
+echo "Your mail INBOX is located in $MAIL."
+echo
+echo "If you are reading this message,"
+echo "critical environmental variables have been set."
+echo
+echo
+
+
+##########################
+#  1562943 #Ticket 
+#############################
+
+#########################################
+#!/bin/bash 
+
+SCR=`basename $0`
+
+LINEOUT="../../../lib/qa.lineout"
+
+OUT=`grep search /etc/resolv.conf| wc -l`
+
+if [$OUT -gt 0 ]; then 
+	message="Search config found in  file: /etc/resolv.conf"
+	status="OK"
+	$LINEOUT $status $SCR "$message"
+else
+	message="Search config not found in file: /etc/resolv.conf"
+	status="FAIL"
+	$LINEOUT $status $SCR "$message"
+
+fi
+
+############################################################
+
+#local_accounts.sh 
+
+#!/bin/bash 
+SCR=`basename $0`
+LINEOUT="../../../lib/qa.lineout"
+
+accounts="opc_op edagent epcs iamddm ctmagent controlm nezumi edagent"
+
+for account in `echo $accounts`
+
+do 
+
+	OUT=`grep "^$account:" /etc/passwd | wc -l`
+	if [$OUT -gt 0 ]; then	
+		message="local accounts found: $account"
+		status="OK"
+		$LINEOUT $status $scr "$message"
+	else
+		message="LOCAL ACCOUNTS NOT FOUND: $account"
+		status="WARN"
+		$LINEOUT $status $SCR "$message"
+	fi
+done
+=============================================================================
+
+
+################################################################
+#
+#     Program    : check.search_process.status
+#                : Fredrick Were
+#                : Sept 2017
+#                    : Updated .... 
+#
+#################################################################
+#!/bin/bash 
+
+MAILTO='Fredrick.O.Were@dominionenergy.com'
+SUBJECT="$message2"
+
+SCR=`basename $0`
+
+LINEOUT="../../../lib/qa.lineout"
+
+#OUT=`ps -ef | grep -i index | wc -l`
+
+OUT=`ps -ef | grep -i index |  awk -F : 'NR==3 {print$21}`| wc -l`
+OUT2=`ps -ef | grep -i index |  awk -F : 'NR==3 {print$3}'|wc -l ` # processid
+
+
+if [$OUT -gt 0 ]; then 
+	message="Search process is up and running: processID: $OUT3"
+	message2="Topic: checking the status of search agent processes:"
+	mail -s "$SUBJECT $message" "$MAILTO"
+	$LINEOUT $status $SCR "$message"
+else
+	message="Search agent process is not running"
+	status="FAIL"
+	mail -s "$SUBJECT $message" "$MAILTO"
+	$LINEOUT $status $SCR "$message"
+
+fi
+
+
+
+
+# service unit is running
+
+systemctl is-active name.service
+
+#Similarly, to determine whether a particular service unit is enabled,
+ type: 
+
+systemctl is-enabled name.service
+
+
+systemctl status gdm.service # Displaying Service Status
+
+
+# Example 9.3. Displaying Services Ordered to Start Before a Service
+
+~]# systemctl list-dependencies --after gdm.service
+gdm.service
++-dbus.socket
++-getty@tty1.service
++-livesys.service
++-plymouth-quit.service
+
+
+Displaying Services Ordered to Start After a Service
+
+systemctl list-dependencies --before gdm.service
+gdm.service
++-dracut-shutdown.service
++-graphical.target
+
+
+systemctl start name.service # start the service
+
+
+systemctl start httpd.service  # start
+
+systemctl stop name.service # stop 
+
+# deactivate this service unit and stop the bluetoothd daemon 
+
+~]# systemctl stop bluetooth.service
+
+
+ Restarting a Service
+
+systemctl restart name.service
+
+systemctl try-restart name.service
+
+systemctl reload name.service
+
+
+
+9.2.6. Enabling a Service
+
+systemctl enable name.service
+systemctl reenable name.service
+
+
+
+
+9.2.7. Disabling a Service
+
+systemctl disable name.service
+
+
+#########################
+#
+In addition, you can mask any service unit to prevent it from being started manually
+# or by another service. To do so, run the following command as root: 
+
+systemctl mask name.service
+################################
+
+
+
+
+ll
+
+
+To create a tar file, enter: 
+
+tar -cvf filename.tar directory/file 
+ 
+
+You can tar multiple files and directories at the same time by listing them with a space between each one: 
+
+tar -cvf filename.tar /home/mine/work /home/mine/school 
+ 
+
+The above command places all the files in the work and the school subdirectories of /home/mine in a new file called filename.tar in the current directory. 
+
+
+You can tar multiple files and directories at the same time by listing them with a space between each one: 
+
+tar -cvf filename.tar /home/mine/work /home/mine/school 
+ 
+
+The above command places all the files in the work and the school subdirectories of /home/mine in a new file called filename.tar in the current directory. 
+
+To list the contents of a tar file, enter: 
+
+ 
+tar -tvf filename.tar
+ 
+
+To extract the contents of a tar file, enter: 
+
+ tar -xvf filename.tar 
+
+ 
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+
+
+print("Hello World")
+
+echo "Today is `date`" 
+echo $? 
+ It will print 0 to indicate command is successful.
+ 
+ #########################
+ # TESTING READING FILES 
+ 
+ echo "What is your name please: ! "
+ read fname 
+ 
+ echo "Good morning $fname, Nice meeting you"
+ 
+ #################################################
+ 
+ #!/bin/sh
+ #
+ # Script that demos, command line args
+ #
+ echo "Total number of command line argument are $#"
+ echo "$0 is script name"
+ echo "$1 is first argument"
+ echo "$2 is second argument"
+ echo "All of them are :- $* or $@"
+ 
+ #########################
+ 
+ cat > sname
+ vivek
+ ashish
+ zebra
+ babu
+ 
+ tr "[a-z]" "[A-Z]" < sname > cap_names
+$ cat cap_names
+ VIVEK
+ ASHISH
+ ZEBRA
+ BABU
+ 
+ #############################
+ 
+  ls | more
+   who | sort
+    who | wc -l
+	 ls | more
+	  ls | wc -l
+ 
+ 
+ tail +20 < hotel.txt | head -n30 >hlist
+ 
+ $ ls -lR 
+ 
+ Process defined as:
+ "A process is program (command given by user) to perform specific Job. In Linux when you start process, it gives a number 
+ to process (called PID or process-id), PID starts from 0 to 65535."
+ 
+ # finding how many files u have on your system 
+ 
+ ls / -R | wc -l
+ # run this on the background 
+$ ls / -R | wc -l &
+ The ampersand (&) 
+ 
+# kill processes 
+
+kill -9 {process id)
+killall (process-name } # kill by name  
+$ killall httpd 
+ 
+# grep running processes 
+ 
+ 
+ 
+find version of tomcat 
+
+#  	find / -name "version.sh"
+# 	find / -name "tomcat7"
+
+type RELEASE-NOTES | find "Apache Tomcat Version" #(windows)
+
+cat RELEASE-NOTES | grep "Apache Tomcat Version" # linux 
+
+sh tomcat/bin/version.sh
+
+:/usr/share/tomcat7/bin$ ./version.sh
+
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+
+
+###########################################
+# bash reference ( all bash info here) 
+
+$ cat yorno.sh
+#!/bin/bash
+
+echo -n "Do you agree with this? [yes or no]: "
+read yno
+case $yno in
+
+        [yY] | [yY][Ee][Ss] )
+                echo "Agreed"
+                ;;
+
+        [nN] | [n|N][O|o] )
+                echo "Not agreed, you can't proceed the installation";
+                exit 1
+                ;;
+        *) echo "Invalid input"
+            ;;
+esac
+
+$ ./yorno.sh
+#Do you agree with this? [yes or no]: YES
+#Agreed
+###########################
+#####################################################################################
+#Startup script
+############################
+
+
+# $ cat startpcapp
+#!/bin/bash
+
+case "$1" in
+'start')
+	echo "Starting application"
+	/usr/bin/startpc
+;;
+
+'stop')
+	echo "Stopping application"
+	/usr/bin/stoppc
+;;
+
+'restart')
+	echo "Usage: $0 [start|stop]"
+;;
+esac
+
+############################################
+##################################################
+
+#Syntax
+
+#The syntax is as follows: 
+          case  $variable-name  in
+                pattern1)       
+     		    command1
+                    ...
+                    ....
+                    commandN
+                    ;;
+                pattern2)
+     		    command1
+                    ...
+                    ....
+                    commandN
+                    ;;            
+                patternN)       
+     		    command1
+                    ...
+                    ....
+                    commandN
+                    ;;
+                *)              
+          esac 
+##############################################################
+###############################################################
+
+case  $variable-name  in
+                pattern1|pattern2|pattern3)       
+     		    command1
+                    ...
+                    ....
+                    commandN
+                    ;;
+                pattern4|pattern5|pattern6)
+     		    command1
+                    ...
+                    ....
+                    commandN
+                    ;;            
+                pattern7|pattern8|patternN)       
+     		    command1
+                    ...
+                    ....
+                    commandN
+                    ;;
+                *)              
+          esac 
+
+#####################################################
+###################################
+#sample 
+
+#!/bin/bash
+
+# if no command line arg given
+# set rental to Unknown
+
+if [ -z $1 ]
+then
+  rental="*** Unknown vehicle ***"
+elif [ -n $1 ]
+then
+# otherwise make first arg as a rental
+  rental=$1
+fi
+
+# use case statement to make decision for rental
+case $rental in
+   "car") echo "For $rental rental is Rs.20 per k/m.";;
+   "van") echo "For $rental rental is Rs.10 per k/m.";;
+   "jeep") echo "For $rental rental is Rs.5 per k/m.";;
+   "bicycle") echo "For $rental rental 20 paisa per k/m.";;
+   "enfield") echo "For $rental rental Rs.3  per k/m.";;
+   "thunderbird") echo "For $rental rental Rs.5 per k/m.";;
+   *) echo "Sorry, I can not get a $rental rental  for you!";;
+esac
+#########################################################################
+
+
+	#Sample outputs: 
+	#Sorry, I can not get a *** Unknown vehicle *** rental  for you!
+	#For jeep rental is Rs.5 per k/m.
+	#For enfield rental Rs.3  per k/m.
+	#Sorry, I can not get a bike rental  for you!
+
+	#The case statement first checks $rental against each option for a match. If it matches "car", the echo command will display rental for car. If it matches "van", the echo command will display rental for van and so on. If it matches nothing i.e. * (default option), an appropriate warning message is printed. 
+##############################################################
+
+####################################################################
+#Using Multiple Patterns
+
+#!/bin/bash
+NOW=$(date +"%a")
+case $NOW in
+	Mon)	
+		echo "Full backup";;
+	Tue|Wed|Thu|Fri)
+		echo "Partial backup";;
+	Sat|Sun)	
+		echo "No backup";;
+	*) ;;
+esac
+###################################################################################
+######################################################################################
+
+
+#!/bin/bash
+OPT=$1   # option
+FILE=$2  # filename
+
+# test -e and -E command line args matching
+case $OPT in
+  -e|-E) 
+  	echo "Editing $2 file..." 
+        # make sure filename is passed else an error displayed   
+  	[ -z $FILE ] && { echo "File name missing"; exit 1; } || vi $FILE	
+  	;;
+  -c|-C) 
+  	echo "Displaying $2 file..." 
+  	[ -z $FILE ] && { echo "File name missing"; exit 1; } || cat $FILE	
+  	;;
+  -d|-D) 
+  	echo "Today is $(date)" 
+  	;;
+   *) 
+    echo "Bad argument!" 
+    echo "Usage: $0 -ecd filename"
+    echo "	-e file : Edit file."
+    echo "	-c file : Display file."
+    echo "	-d      : Display current date and time."	
+    ;;
+esac
+####################################
+
+#Run it as follows: 
+
+chmod +x casecmdargs.sh
+#./casecmdargs.sh
+#./casecmdargs.sh -e /tmp/file
+#./casecmdargs.sh -E /tmp/file
+#./casecmdargs.sh -e 
+#./casecmdargs.sh -D
+
+####################################################################
+######################################################################
+# disk-cleaning&report
+
+
+cat disktest.sh
+#!/bin/bash
+
+# This script does a very simple test for checking disk space.
+
+space=`df -h | awk '{print $5}' | grep % | grep -v Use | sort -n | tail -1 | cut -d "%" -f1 -`
+
+case $space in
+[1-6]*)
+  Message="All is quiet."
+  ;;
+[7-8]*)
+  Message="Start thinking about cleaning out some stuff.  There's a partition that is $space % full."
+  ;;
+9[1-8])
+  Message="Better hurry with that new disk...  One partition is $space % full."
+  ;;
+99)
+  Message="I'm drowning here!  There's a partition at $space %!"
+  ;;
+*)
+  Message="I seem to be running with an nonexistent amount of disk space..."
+  ;;
+esac
+
+echo $Message | mail -s "disk report `date`" anny
+##########################################################################
+
+
+anny ~/testdir>
+You have new mail.
+
+anny ~/testdir> tail -16 /var/spool/mail/anny
+From anny@octarine Tue Jan 14 22:10:47 2003
+Return-Path: <anny@octarine>
+Received: from octarine (localhost [127.0.0.1])
+        by octarine (8.12.5/8.12.5) with ESMTP id h0ELAlBG020414
+        for <anny@octarine>; Tue, 14 Jan 2003 22:10:47 +0100
+Received: (from anny@localhost)
+        by octarine (8.12.5/8.12.5/Submit) id h0ELAltn020413
+        for anny; Tue, 14 Jan 2003 22:10:47 +0100
+Date: Tue, 14 Jan 2003 22:10:47 +0100
+From: Anny <anny@octarine>
+Message-Id: <200301142110.h0ELAltn020413@octarine>
+To: anny@octarine
+Subject: disk report Tue Jan 14 22:10:47 CET 2003
+
+Start thinking about cleaning out some stuff.  There's a partition that is 87 % full.
+
+anny ~/testdir>
+########################################################################################################
+#####################################################################################################################
+
+
+
+The until loop is very similar to the while loop, except that the 
+loop executes until the TEST-COMMAND executes successfully. 
+As long as this command fails, the loop continues. The syntax is the same as for the while loop:
+
+# untill command 
+
+until [ condition ]
+do
+   command1
+   command2
+   ...
+   ....
+   commandN
+done
+
+##########################
+
+#!/bin/bash
+i=1
+until [ $i -gt 6 ]
+do
+	echo "Welcome $i times."
+	i=$(( i+1 ))
+done
+
+
+#######################################################
+
+#!/bin/bash
+
+# This script copies files from my homedirectory into the webserver directory.
+# A new directory is created every hour.
+# If the pics are taking up too much space, the oldest are removed.
+
+while true; do 
+	DISKFUL=$(df -h $WEBDIR | grep -v File | awk '{print $5 }' | cut -d "%" -f1 -)
+
+	until [ $DISKFUL -ge "90" ]; do 
+
+        	DATE=`date +%Y%m%d`
+        	HOUR=`date +%H`
+        	mkdir $WEBDIR/"$DATE"
+                                                                                
+        	while [ $HOUR -ne "00" ]; do
+                	DESTDIR=$WEBDIR/"$DATE"/"$HOUR"
+                	mkdir "$DESTDIR"
+                	mv $PICDIR/*.jpg "$DESTDIR"/
+                	sleep 3600
+                	HOUR=`date +%H`
+        	done
+
+	DISKFULL=$(df -h $WEBDIR | grep -v File | awk '{ print $5 }' | cut -d "%" -f1 -)
+	done
+
+	TOREMOVE=$(find $WEBDIR -type d -a -mtime +30)
+	for i in $TOREMOVE; do
+		rm -rf "$i";
+	done
+
+done
+
+###############################################################################
+
+sudo nohup pppd [options] 2> /dev/null &
+#  check to see if it started correctly
+PPP_RESULT="unknown"
+while true; do
+  if [[ $PPP_RESULT != "unknown" ]]; then
+    break
+  fi
+  sleep 1
+  # read in the file containing the std out of the pppd command
+  #  and look for the lines that tell us what happened
+  while read line; do
+    if [[ $line == Script\ /etc/ppp/ipv6-up\ finished* ]]; then
+      echo "pppd has been successfully started"
+      PPP_RESULT="success"
+      break
+    elif [[ $line == LCP:\ timeout\ sending\ Config-Requests ]]; then
+      echo "pppd was unable to connect"
+      PPP_RESULT="failed"
+      break
+    elif [[ $line == *is\ locked\ by\ pid* ]]; then
+      echo "pppd is already running and has locked the serial port."
+      PPP_RESULT="running"
+      break;
+    fi
+  done < <( sudo cat ./nohup.out )
+done
+
+#####################################################################################################
+
+
+
+while [ "$(ls -l --full-time TargetFile)" != "$a" ] ; do a=$(ls -l --full-time TargetFile); sleep 10; done
+
+
+Wait for file to stop changing 
+
+
+Here's a way to wait for a file (a download, a logfile, etc) to stop changing, then do something. As written it will just return to the prompt, but you could add a "; echo DONE" or whatever at the end.
+
+This just compares the full output of "ls" every 10 seconds, and keeps going as long as that output has changed since the last interval. If the file is being appended to, the size will change, and if it's being modified without growing, the timestamp from the "--full-time" option will have changed. The output of just "ls -l" isn't sufficient since by default it doesn't show seconds, just minutes.
+
+Waiting for a file to stop changing is not a very elegant or reliable way to measure that some process is finished - if you know the process ID there are much better ways. This method will also give a false positive if the changes to the target file are delayed longer than the sleep interval for any reason (network timeouts, etc). But sometimes the process that is writing the file doesn't exit, rather it continues on doing something else, so this approach can be useful if you understand its limitations.
+
+
+======================
+
+
+while [ $(( $(date +%s) - $(stat -c %Y FILENAME) )) -lt 10 ]; do sleep 1; done; echo DONE
+
+
+
+
+2015-05-09 12:30:13 
+
+User: flatcap 
+
+Functions: date echo sleep stat 
+
+
+
+Wait for file to stop changing 
+
+
+This loop will finish if a file hasn't changed in the last 10 seconds.
+
+.
+
+It checks the file's modification timestamp against the clock.
+
+If 10 seconds have elapsed without any change to the file, then the loop ends.
+
+.
+
+This script will give a false positive if there's a 10 second delay between updates,
+
+e.g. due to network congestion
+
+.
+
+How does it work?
+
+'date +%s' gives the current time in seconds
+
+'stat -c %Y' gives the file's last modification time in seconds
+
+'$(( ))' is bash's way of doing maths
+
+'[ X -lt 10 ]' tests the result is Less Than 10
+
+otherwise sleep for 1 second and repeat
+
+
+
+###############################################
+# script : using sed commands
+# Platform: Linux (RHEL) (u
+# date : 09/20/2017
+# modified by Freidrick WERE
+##################################################
+
+########################################################
+
+
+While sed is a complicated program in its own right, its most common use is to perform global substitutions in the middle of a pipeline: 
+
+command1 < orig.data | sed 's/old/new/g' | command2 > result
+
+#  globally (i.e. all the occurrences on a line). 
+
+
+
+############################################################
+#			weblogic start by systemd 
+#			documentum> project
+# 			:fwere
+#			:Oct, 2017
+####################################################################
+
+######################################################################
+# My goal is to automate starting the WebLogic adminserver and nodemanagers on a single machine.
+#
+# To begin, I'll have to create a configuration for my services, a so-called unit file. 
+#
+# Unit files live in /etc/systemd/system.
+#
+# Setting up unit files
+
+#Let's start with the nodemanager:
+#######################################################################
+
+
+
+
+vi /etc/systemd/system/wls_nodemanager.service
+
+[Unit]
+
+Description=WebLogic nodemanager service
+ 
+[Service]
+
+Type=simple
+
+# Note that the following three parameters should be changed to the correct paths
+# on your own system
+
+WorkingDirectory=/data/domains/base_domain
+
+ExecStart=/data/domains/base_domain/bin/startNodeManager.sh
+
+ExecStop=/data/domains/base_domain/bin/stopNodeManager.sh
+
+User=oracle
+
+Group=oinstall
+ 
+
+[Install]
+
+WantedBy=multi-user.target
+
+
+########################################################
+
+# I use the stopNodeManager.sh script here, but I could have easily dropped that parameter as Systemd 
+first gives a polite 'kill' command, to which the nodemanager would respond with a shutdown. 
+Also note that contrary to Linux best practice I did not name an explicit PID file – the nodemanager service maintains its own.
+#############################################################################################################################
+
+vi /etc/systemd/system/wls_adminserver.service
+
+[Unit]
+
+Description=WebLogic Adminserver service
+ 
+[Service]
+
+Type=simple
+
+WorkingDirectory=/data/domains/base_domain
+
+ExecStart=/data/domains/base_domain/startWebLogic.sh
+
+ExecStop=/data/domains/base_domain/bin/stopWebLogic.sh
+
+User=oracle
+
+Group=oinstall
+
+
+[Install]
+
+WantedBy=multi-user.target
+
+###########################################################
+
+
+# monitor your services 
+
+Similar to the nodemanager I have included the optional stopWebLogic script. 
+Now we can test our unit files by attempting to start these new services for the first time:
+
+systemctl start wls_nodemanager
+systemctl start wls_adminmanager
+
+##########################################################
+
+#  Note that by default, systemd will not report anything in response to your command. 
+# To check on the status of our newly-created services:
+####################################################################
+
+
+
+systemctl status wls_nodemanager wls_adminserver
+
+
+
+wls_adminserver.service - WebLogic Adminserver service
+
+   Loaded: loaded (/etc/systemd/system/wls_adminserver.service; enabled; vendor preset: disabled)
+
+   Active: active (running) since Fri 2017-01-20 12:48:47 CET; 26min ago
+
+ Main PID: 774 (startWebLogic.s)
+
+   CGroup: /system.slice/wls_adminserver.service
+
+           +-774 /bin/sh /data/domains/base_domain/startWebLogic.sh
+           +-783 /bin/sh /data/domains/base_domain/bin/startWebLogic.sh
+           +-900 /data//jdk/bin/java -Dderby.system.home=/data/domains/base_domain/common/db -classpath /data/Oracle...
+           +-903 /data//jdk/bin/java -server -Xms512m -Xmx1024m 
+
+
+
+wls_nodemanager.service - WebLogic nodemanager service
+
+
+
+
+Loaded: loaded (/etc/systemd/system/wls_nodemanager.service; enabled; vendor preset: disabled)
+
+15.   Active: active (running) since Fri 2017-01-20 12:48:47 CET; 26min ago
+
+16. Main PID: 805 (startNodeManage)
+
+17.   CGroup: /system.slice/wls_nodemanager.service
+
+18.           +-805 /bin/sh /data/domains/base_domain/bin/startNodeManager.sh
+
+19.           +-812 /bin/sh /data/Oracle/middleware/wlserver/server/bin/startNodeManager.sh
+
+20.           +-911 /data//jdk/bin/java -server -Xms32m -Xmx200m 
+
+############################################################################
+
+Notice the process tree and included PID numbers. Additional commands are for example:
+
+systemctl restart wls_nodemanager wls_adminserver
+systemctl stop wls_nodemanager wls_adminserver
+
+
+# loggings (logger)
+#    Systemd runs its own logger, by default all output from scripts is logged here. 
+#  You can use the journalctl command to follow those log:
+
+
+journalctl -u wls_adminserver -f   #( same as tail -f logs)
+
+
+# The -f parameter allows tailing entries as they are being logged
+
+
+
+If both your services are up and running, this would be a good moment to enable them to start at system boot time:
+
+systemctl enable wls_nodemanager wls_adminserver
+
+
+
+
+# And finally, if we need to change the unit configuration files, we need to tell Systemd to reload the configuration 
+# before additional actions are taken:
+
+systemctl daemon-reload
+
+
+
+down vote
+
+
+
+You can use the following code snippet :
+java -XX:+PrintFlagsFinal -Xms512m -Xmx1024m -Xss512k -XX:PermSize=64m -XX:MaxPermSize=128m
+    -version | grep -iE 'HeapSize|PermSize|ThreadStackSize'
+
+
+Try doubling it. If you don't have many other processes using up the 6GB of ram then giving 1-2GB of RAM to the JVM should be fine. 
+-Xms1024m -Xmx2048m
+
+
+
+#################################################
+# USER_MEM_ARGS="-Xms256m -Xmx1634m -XX:PermSize=64m -XX:MaxPermSize=256m -Xss256k -XX:+DisableExplicitGC
+
+USER_MEM_ARGS="-Xms256m -Xmx2048m -XX:PermSize=128m -XX:MaxPermSize=256m -Xss256k -XX:+DisableExplicitGC
+
+####################################################################
+
+1.Use the following formula to determine an estimate of the maximum memory, in bytes, needed
+1.25*(TotalDocs * ((AvgDocSize/8192+1) *8192 + 16384))
+
+
+
+For example to allow the user WC_USER to have 4092 connections, in the /etc/security/limits.conf file add the following entries:
+WC_User       soft    nofile            4092
+WC_User       hard    nofile            4092
+
+
+
+
+
+
+
+
+startMethodServer.sh
+
+#USER_MEM_ARGS="-Xms1024m -Xmx1024m -XX:PermSize=64m -XX:MaxPermSize=256m -Xss256k -XX:+DisableExplicitGC"
+
+USER_MEM_ARGS="-Xms256m -Xmx2048m -XX:PermSize=128m -XX:MaxPermSize=256m -Xss256k -XX:+DisableExplicitGC"
+export USER_MEM_ARGS
+
+########################################################################
+# incinga > Ignored error 
+
+Process Documentum_java_Xms1024 - PROC CRITICAL - Found (0) processes with name (Documentum_java_Xms1024) 
+
+####################################################################################
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+ 
+ 
+ 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+cp linuxserver /etc/logrotate.d/
+chmod 644 /etc/logrotate.d/linuxserver
+chown root.root /etc/logrotate.d/linuxserver 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
