@@ -1,0 +1,1506 @@
+
+###############################################
+# script : using awk commands
+# Platform: Linux (RHEL) (u
+# date : 09/20/2017
+# modified by Freidrick WERE
+##################################################
+
+
+awk 'FNR==27 {print FILENAME, $0}' *.txt >output.txt
+•FILENAME is built-in awk variable for current input file name
+•FNR refer to line number of current file
+•$0 means whole line
+##############################################################
+
+# awk apttern 
+Awk Command Syntax
+
+
+awk '/optional_pattern/ { action }' file
+
+awk '{ print }' file
+
+awk '{print}' /etc/motd 
+
+cat /etc/motd | awk '{print $2}'
+
+awk '/bash/' /etc/passwd
+
+
+# by default awk is seperated by whitespace 
+# specify other column seperator by use of -F option
+# ie use of ":" as field seperator  $1 $2 $3 ....
+# $0 = entire column 
+
+“awk -F : '{ print $1 }' /etc/passwd” # will print only the first column of the file.
+
+
+awk -F : '{ print $1 }' /etc/passwd
+
+####################
+root
+ daemon
+ bin
+ sys
+########################
+
+
+
+“awk -F : '/bash/ { print $1,$3,$4 }' /etc/passwd”  # print out the 1st, 3rd and 4th field  lines matching the pattern “bash”
+
+
+awk -F : '/bash/ { print $1,$3,$4 }' /etc/passwd
+
+#root 0 0
+#me 1000 1000
+
+
+#############################
+# search conditional
+# for example if the ( 4th column is raghu > print it) from /etc/group 
+
+ awk -F : '{ if ($4 ~ /raghu/) print}' /etc/group
+
+#adm:x:4:raghu
+# dialout:x:20:raghu
+# cdrom:x:24:raghu
+# plugdev:x:46:raghu
+
+
+#Print columns 1, 3 and 4 if column 4 is “raghu” (in file /etc/group).
+
+awk -F : '{ if ($4 ~ /raghu/) print $1, $3, $4}' /etc/group
+
+#adm 4 raghu
+# dialout 20 raghu
+# cdrom 24 raghu
+
+######################################################
+#####################################################
+# printing numbers in variables display  with ( FNR)
+
+#	FNR variable displays current line number in the document
+
+awk '{print FNR, $0}' /etc/passwd
+
+ 1 root:x:0:0:root:/root:/bin/bash
+ 2 daemon:x:1:1:daemon:/usr/sbin:/bin/sh
+ 3 bin:x:2:2:bin:/bin:/bin/sh
+ 4 sys:x:3:3:sys:/dev:/bin/sh
+ 5 sync:x:4:65534:sync:/bin:/bin/sync
+ 6 games:x:5:60:games:/usr/games:/bin/sh
+
+
+# separate line numbers and lines with a ‘tab’ instead of ‘whitespace’
+
+awk '{print FNR "\t" $0}' /etc/passwd
+
+
+#####################################################
+# range 
+#######################
+
+awk 'BEGIN{min=2;max=5}
+{
+ if (NR>=min)
+{
+if(NR<=max)
+print
+}
+}' filename
+
+
+#############################
+
+awk 'FNR==5' <file>   # To print a specific line from a file 
+
+awk '{if (NR == 3) print}' <file>
+
+
+
+
+testfile="testfile"; 
+
+for cmd in "awk 'FNR==20'" "sed -n '20p'"; 
+
+	do echo; echo $cmd; eval "$cmd $testfile";
+		 for i in {1..3}; do time for j in {1..100}; 
+			do 	
+				eval "$cmd $testfile" >/dev/null; done; done; done 
+
+
+
+
+########################################
+
+awk 'FNR == 5 {print $3}'
+
+
+awk 'BEGIN {print "Name\t\tAge"}  FNR == 5 {print "Name: "$3"\tAge: "$2}'
+
+
+ |awk 'FNR == 1 {print $1}'
+
+
+
+#########################################
+
+COUNT=1;
+for i in `nvram show | grep traff- | cut -f1 -d=""`;
+do
+NEW=` nvram show | grep traff- | awk 'NR == a {print}' a=$COUNT`
+echo $NEW
+done 
+
+###############
+Example7: Print all the column 4 values between lines which contain Frank and Low
+
+awk ‘/Frank/,/Low/{print $4}’ db.txt
+
+
+
+
+
+####################################################
+NR > specifies total number of records (lines) seen so far
+
+can be used to print specific lines (for example, first five or last 7 lines). 
+“awk 'NR<=5' /etc/passwd”
+
+prints out first 5 lines (same as “head -n 5 /etc/passwd”).
+
+
+awk 'NR<=5' /etc/passwd     		# prints out first 5 lines
+
+same as > “head -n 5 /etc/passwd” 	# prints out first 5 lines
+
+	root:x:0:0:root:/root:/bin/bash
+ 	daemon:x:1:1:daemon:/usr/sbin:/bin/sh
+ 	bin:x:2:2:bin:/bin:/bin/sh
+ 	sys:x:3:3:sys:/dev:/bin/sh
+ 	sync:x:4:65534:sync:/bin:/bin/sync
+
+
+# DISPLAY LINES BETWN (10 TO 15) 
+
+awk 'NR==10, NR==15 {print FNR "\t" $0}' /etc/passwd 	# will display lines 10 through 15 
+
+
+
+####################################
+# NUMBER OF FIELDS (NF)
+
+
+awk -F : 'NR==1 {print NF "\t" $0}' /etc/passwd
+
+# ('NR==1)		# will show number of fields in the 1st line of /etc/passwd
+ 	7 root:x:0:0:root:/root:/bin/bash
+
+
+##################################
+#The BEGIN block  & ENDBLOCK 
+#########################################
+
+awk 'BEGIN {print "\nThis is /etc/passwd file\n"} {print}' /etc/passwd
+
+	This is /etc/passwd file
+
+	root:x:0:0:root:/root:/bin/bash
+ 	daemon:x:1:1:daemon:/usr/sbin:/bin/sh
+ 	bin:x:2:2:bin:/bin:/bin/sh
+ 	sys:x:3:3:sys:/dev:/bin/sh
+ 	sync:x:4:65534:sync:/bin:/bin/sync
+
+#######################
+END block
+
+The END block executes statements after the lines have been processed
+
+# useful for > printing out number of occurrences of a pattern
+
+
+awk 'BEGIN { counter =0 } /bash/ {counter++} END { print counter}' /etc/passwd
+
+# 2
+
+To print the last line of the file
+
+
+ 	awk 'END {print NR "\t" $0}' /etc/passwd  	# print the last line of the file
+
+	awk 'END {print}' /etc/passwd			# print the last line of the file
+
+		#34 dictd:x:114:123:Dictd Server,,,:/var/lib/dictd:/bin/false
+
+
+
+####################################################
+
+Delete leading whitespace (spaces and tabs
+
+cat txtfile |awk '{ sub(/^[ \t]+/, ""); print }'
+
+
+###############EXPLANATION 
+=============================
+This one-liner also uses sub() function
+	 replace regular expression “^[ \t]+” with nothing “”. 
+	
+	 The regular expression “^[ \t]+” means match one or more space ” ” 
+		
+	 or a tab “\t” at the beginning “^” of the string.
+
+=========================================
+
+awk '{ sub(/[ \t]+$/, ""); print }'  	# delete trailing whitespace (spaces and tabs) from the end of each line
+
+
+awk '{ gsub(/^[ \t]+|[ \t]+$/, ""); print }' 	# delete both leading and trailing whitespaces from each line (trim):
+
+
+
+awk '{ $1=$1; print }' 	# remove whitespace between fields 
+
+
+awk '{ sub(/^/, " "); print }'			#  insert 5 blank spaces at beginning of each line
+
+awk '{ sub(/foo/,"bar"); print }'  		#  substitute (find and replace) “foo” with “bar” on each line
+
+
+awk -F ":" '{ print $1 | "sort" }' /etc/passwd   # print and sort the login names of all users:
+
+#####################################################################
+
+
+
+
+$ grep "_app$" testfile | awk '{print $4}'
+
+# we give awk the script contents '{print $4}'.
+
+# grep "_app$" testfile | awk '{print $1, $4}'
+
+
+
+Reverse a file:
+{ x[NR] = $0 } # put each line into array x
+END { for (i = NR; i > 0; i--)
+print x[i] }
+
+
+
+
+###########################################
+# AWK """""""""""""""""""""""""""""\
+########################################################
+
+numbers. 
+
+ 
+# id.awk -- implement id in awk
+# Arnold Robbins, arnold@gnu.ai.mit.edu, Public Domain
+# May 1993
+
+# output is:
+# uid=12(foo) euid=34(bar) gid=3(baz) \
+#             egid=5(blat) groups=9(nine),2(two),1(one)
+
+BEGIN    \
+{
+    if ((getline < "/dev/user") < 0) {
+        err = "id: no /dev/user support - cannot run"
+        print err > "/dev/stderr"
+        exit 1
+    }
+    close("/dev/user")
+
+    uid = $1
+    euid = $2
+    gid = $3
+    egid = $4
+
+    printf("uid=%d", uid)
+    pw = getpwuid(uid)
+    if (pw != "") {
+        split(pw, a, ":")
+        printf("(%s)", a[1])
+    }
+
+    if (euid != uid) {
+        printf(" euid=%d", euid)
+        pw = getpwuid(euid)
+        if (pw != "") {
+            split(pw, a, ":")
+            printf("(%s)", a[1])
+        }
+    }
+
+    printf(" gid=%d", gid)
+    pw = getgrgid(gid)
+    if (pw != "") {
+        split(pw, a, ":")
+        printf("(%s)", a[1])
+    }
+
+    if (egid != gid) {
+        printf(" egid=%d", egid)
+        pw = getgrgid(egid)
+        if (pw != "") {
+            split(pw, a, ":")
+            printf("(%s)", a[1])
+        }
+    }
+
+    if (NF > 4) {
+        printf(" groups=");
+        for (i = 5; i <= NF; i++) {
+            printf("%d", $i)
+            pw = getgrgid($i)
+            if (pw != "") {
+                split(pw, a, ":")
+                printf("(%s)", a[1])
+            }
+            if (i < NF)
+                printf(",")
+        }
+    }
+    print ""
+}
+###########################################################
+
+
+
+
+
+# how long a process has been running 
+# format [[dd-]hh:]mm:ss. 
+
+ps -0 etimes= -p "$$"
+ps -p $$ -o etime="Silly Header Here"
+
+/proc/$pid/stat.
+awk '{print "CPU time: " $14+$15; print "start time: " $22}' /proc/$$/stat
+
+ps -p $(pgrep find) -o etime= – ""
+################################################################################################
+ps takes a -o option to specify the output format, and one of the available columns is etime
+
+
+Thus you can run this to get the PID and elapsed time of every process:
+$ ps -eo pid,etime
+
+
+
+$ ps -eo pid,etime | awk '/^12345/ {print $2}'
+
+simpler command 
+
+ps -eo pid,comm,cmd,start,etime | grep -i X
+
+# X is the name of the process
+
+
+########################################
+
+#!/bin/bash
+
+echo "Checking run time"
+read -p "What is the pid? " PID
+
+while true; do
+    # sleep needed! used to reduce cpu usage and mass of output
+    sleep 5
+    ps -eo uid,pid,etime | egrep '$PID' | egrep '$UID'
+done
+
+ps aux | awk 'NR == 1 || /PROCESS_NAME/'
+
+
+ps -eo pid,comm, etime,uid,gid | grep (processid)
+
+pidof openvpn 
+pidof index 
+
+sudo su dmadmin 
+sudo su dmadmin 
+sudo su dmadmin 
+
+
+cd /shar/jbos/server
+
+
+#######################################################
+
+
+awk program that searches the input file mail-list for the character string ‘li’
+
+
+awk '/li/ { print $0 }' mail-list
+
+When lines containing ‘li’ are found, they are printed because ‘print $0’ means print the current line. 
+
+ slashes (‘/’) surround the string ‘li’ in the awk program
+########################
+
+$ awk '/li/ { print $0 }' mail-list
+
+
+Print every line that is longer than 80 characters: 
+awk 'length($0) > 80' data
+
+
+Print the length of the longest input line: 
+awk '{ if (length($0) > max) max = length($0) }
+     END { print max }' data
+
+
+Print every line that has at least one field: 
+awk 'NF > 0' data
+
+
+
+Print seven random numbers from 0 to 100, inclusive: 
+awk 'BEGIN { for (i = 1; i <= 7; i++)
+                 print int(101 * rand()) }'
+
+Print the total number of bytes used by files: 
+ls -l files | awk '{ x += $5 }
+                   END { print "total bytes: " x }'
+
+
+? Print the total number of kilobytes used by files: 
+ls -l files | awk '{ x += $5 }
+   END { print "total K-bytes:", x / 1024 }'
+
+
+? Print a sorted list of the login names of all users: 
+awk -F: '{ print $1 }' /etc/passwd | sort
+
+
+? Count the lines in a file: 
+awk 'END { print NR }' data
+
+
+? Print the even-numbered lines in the data file: 
+awk 'NR % 2 == 0' data
+
+
+If you used the expression ‘NR % 2 == 1’ instead, the program would print the odd-numbered lines. 
+
+
+
+#!/bin/bash 
+######################### 
+# Backups to DESTINATION_FOLDER / Zips and performs basic rotation 
+########################## 
+ 
+	SOURCE_FOLDER="/source/" # source folder 
+	DESTINATION_FOLDER="/backup/" # mounted folder 
+
+	BASENAME="basename $SOURCE_FOLDER" 
+	ROTATE_PERIOD=10 
+ 
+# datestamp has a formatted date 
+	datestamp=`date +"%d-%m-%Y"` 
+#### Display command usage ######## 
+
+
+
+usage() 
+	{ 
+
+cat << EOF 
+
+USAGE: 
+
+backuprot [OPTIONS] /source_folder/ /destination_folder/ 
+
+	Back up and entire folder, creates tgz and , 
+	performs x day rotation of backups Must provide source anddestination folders 
+
+
+	OPTIONS: 
+	-p Specify Rotation period in days - default is $ROTATE_PERIOD 
+
+	EXAMPLES: 
+
+	backuprot -p 5 [/source_folder/] [/destination_folder/] 
+ 
+EOF 
+} 
+
+ 
+#### Getopts ##### 
+
+while getopts ":p " opt; do 
+case "$opt" in 
+p) ROTATE_PERIOD=${OPTARG};; 
+ 
+\?) echo "$OPTARG is an unknown option" 
+usage 
+exit 1 
+;; 
+esac 
+done 
+
+
+
+shift $((OPTIND-1)) 
+
+if [ -z "$1" ] || [ -z "$2" ]; then 
+usage 
+else 
+
+# Backup and gzip the directory
+ 
+SOURCE_FOLDER=$1 
+BASENAME=`basename "$SOURCE_FOLDER"` 
+TGZFILE="$BASENAME-$datestamp.tgz" 
+LATEST_FILE="$BASENAME-Latest.tgz" 
+DESTINATION_FOLDER=$2 
+ 
+echo "\nStarting Backup and Rotate " 
+echo "\n-----------------------------" 
+echo "\nSource Folder : $SOURCE_FOLDER" 
+echo "\nTarget Folder : $DESTINATION_FOLDER" 
+echo "\nBackup file : $TGZFILE " 
+echo "\n-----------------------------" 
+
+if [ ! -d "$SOURCE_FOLDER" ] || [ ! -d "$DESTINATION_FOLDER" ] ; then 
+echo "SOURCE ($SOURCE_FOLDER) or DESTINATION ($DESTINATION_FOLDER) folder doesn't exist/ or is misspelled, check & re-try." 
+exit 0; 
+fi 
+
+ 
+echo "\nCreating $SOURCE_FOLDER/$TGZFILE ... " 
+tar zcvf $SOURCE_FOLDER/$TGZFILE $SOURCE_FOLDER 
+echo "\nCopying $SOURCE_FOLDER/$TGZFILE to $LATEST_FILE ... " 
+cp $SOURCE_FOLDER/$TGZFILE $SOURCE_FOLDER/$LATEST_FILE 
+ 
+echo "\nMoving $TGZFILE -- to --> $DESTINATION_FOLDER " 
+mv $SOURCE_FOLDER/$TGZFILE $DESTINATION_FOLDER 
+ 
+echo "\nMoving $LATEST_FILE -- to --> $DESTINATION_FOLDER " 
+mv $SOURCE_FOLDER/$LATEST_FILE $DESTINATION_FOLDER 
+
+
+
+# count the number of file(s) in the appropriate folder Rotate the logs, delete older than 
+# ROTATE_PERIOD days, if their are at_least 7 backups 
+ 
+FILE_COUNT=`find $DESTINATION_FOLDER -maxdepth 1 -type f | wc -l` 
+echo "\n Rotation period $ROTATE_PERIOD for $DESTINATION_FOLDER " 
+echo "\n $FILE_COUNT files found in $DESTINATION_FOLDER folder" 
+echo "\n find $DESTINATION_FOLDER -mtime +$ROTATE_PERIOD" 
+echo "\n -----------------------------------" 
+
+
+if [ $FILE_COUNT -gt $ROTATE_PERIOD ]; then 
+echo "Removing backups older than $ROTATE_PERIOD in $DESTINATION_FOLDER" 
+echo "Removing these old backup files..." 
+find $DESTINATION_FOLDER -mtime +$ROTATE_PERIOD -exec rm {} \; 
+else 
+echo "Only $FILE_COUNT file, NOT removing older backups in $DESTINATION_FOLDER " 
+fi 
+fi 
+ 
+echo "----------------" 
+echo "Backup_rot Complete. :" 
+echo "to extract file >> tar -xzvf $TGZFILE " 
+
+
+################################################################
+#
+#			:backup rotation
+#			:fwere
+#			: Oct, 2017
+#			#testserver>  inbqlecm54 2.6.32-279.
+###############################################################
+#!/bin/bash 
+
+ZIPFILES="`find $DIR -type f -name '*.zip' -mtime +30 -exec tar -vzcf {}.gz {} --remove-files  \;`"
+
+DGZIP30="`find $DIR -type f -name '*.gz' -mtime +30 -exec rm -f {} \;`"
+
+completion="`echo $?`"
+
+completion2="`echo $?`"
+##################################################################################################
+
+
+
+echo "*********************************************************"
+echo "starting backup ROTATION"
+echo "Finding all the zipfiles onler than 30 days and creating a tar file of them ...."
+
+echo "******************************************************************"
+
+echo " CLEANING IN PROGRESS ******************************* "$ZIPFILES" "
+
+echo "******************************************************"
+
+echo "Checking cleaning status ****************************************** "$completion" "
+
+if [ "$completion" != "0" ]; then echo "files not deleted"; else echo "Files Tarred & cleaned successfully!";
+fi
+
+
+echo "********************************************"
+
+echo "Deleting GZ files onler than 30 days"
+
+echo "*************************************************"
+
+echo $DGZIP30 && echo $completion2
+
+
+echo " *****************************************"
+
+if [ "$completion2" != "0" ]; then echo " Old GZ files Status Uknown ...manually validate"; else echo "Old GZ Files cleaned";
+
+echo "Backup Rotation completed Successfully!: Zipped files are:*************** "$ZIPFILES" " 
+
+echo "************************************************************************"
+
+echo "Done $Good!"
+echo "sending email notification"
+
+echo "***********************************************************************"; 
+
+echo "Backup rotation completed successfully.: Zipped files are: $ZIPFILES" $ | mail -s Fredrick.O.Were@dominionenergy.com
+
+echo "Quiting"
+echo "************************************************************************************"
+fi
+
+########################################################################################
+# crontab part > pending ..........
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+##############################################################################################
+
+else 
+	echo "GZ Files older that 30 days tarred Successfully"; fi
+
+echo *******************************************************"
+
+echo " deleting copies of Gzipped files"
+
+
+
+ZIPFILES="`find $DIR -type f -name '*.zip' -mtime +30 -exec tar -vzcf {}.gz {}   \;`"
+
+
+SECONDZIP="`find $DIR -type f -name '*.zip' -mtime +30 -exec tar -vzcf {}.gz {} \;`"
+
+TARZIP="`find $DIR -type f -name '*.zip' -mtime +30 -exec tar -vzcf {}.gz {} \;`"
+
+GZIPNOW="`find $DIR -type f -name '*.gz' -exec ls -ltr {} \;`"
+
+DGZIP30="`find $DIR -type f -name '*.zip' -mtime +30 -exec rm -f {} \;`"
+
+completion="`echo $?`"
+
+dateformat="`date%Y%M%D_%H%M%S`"
+
+#echo $GZIP
+
+
+
+#################################################
+
+echo "*********************************************************"
+echo "starting backup validation"
+echo "Finding & tarring zip files "${ZIPFILES}" ********************"
+
+if [ -z "$GZIP" ]; then 
+	echo "NO GZ files to Tar";
+
+else 
+	echo "GZ Files older that 30 days tarred Successfully"; fi
+
+echo *******************************************************"
+
+echo " deleting copies of Gzipped files"
+
+echo $
+
+DGZIP30="`find $DIR -type f -name '*.zip' -mtime +30 -exec rm -f {} \;`"
+echo " deletion in progress ********* $DGZIP"
+echo "deletion completed"
+echo "******************************************"
+
+echo ""
+
+
+##########################################
+# PROOF 
+
+find $DIR2 -type f -name "*.bk*"  -cmin +2 -exec tar -vzcf {}.gz {} --remove-files \;
+
+#./testzip.bk
+# ./tarfiles-test.bk
+# zipped and removed 
+
+ZIPFILES="`find $DIR -type f -name '*.zip' -mtime +30 -exec tar -vzcf {}.gz {} --remove-files  \;`"
+
+
+DGZIP30="`find $DIR -type f -name '*.gz' -mtime +30 -exec rm -f {} \;`"
+
+
+##################################################################################################
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+###########################################################
+# finding files created un the last 5 minutes 
+
+ find $DIR2 -type f -name "*.bk*"  -cmin -5 -print
+/tmp/testzip.bk
+/tmp/tarfiles-test.bk
+
+
+find ./ -mtime +7 | xargs -I % sh -c 'tar -rf arc.tar % ; rm -f %'
+
+tar -tvf f1.tar | while read line; do rm `echo $line | awk '{print $6}'` ;  done
+
+
+
+
+
+find $DIR2 -type f -name "*.bk*"  -cmin -5 -print
+
+
+
+**********************************************************
+ZIPFILES="`find $DIR -type f -name '*.zip' -mtime +30 -exec tar -vzcf {}.gz {}   \;`"
+
+
+
+--remove-files
+find $DIR2 -type f -name "*.bk*"  -cmin -5 -exec ls -l {} \;
+
+
+
+
+***************************************************************************************
+
+
+
+echo "deleting copy of 1st GZ_ipped files "
+
+
+
+echo "cheking GZ files older than 30 days & deleting them !!!!"
+		DGZIP="`find $DIR -type f -name '*.zip' -mtime +30 -exec rm -f {} \;`"
+
+		echo $DGZIP
+		completion="`echo $?`"
+		echo "************************************************************"
+		 if [ "$completion" != "0" ]; then echo "files not deleted"; else echo "GZ files Deleted"; f
+
+
+
+
+
+cd ${parent}
+
+tar cvf Tar_File.`date%Y%M%D_%H%M%S` ${source}
+
+
+
+##################################################################################################
+
+find the zip_files in $Dir
+
+tar zipfiles found older than 30 days && delete zipfiles of already tarred files(their copies)
+
+
+send email notification  
+
+ 
+###########################################
+
+find $DIR2 -type f -name "*.bk*"  -cmin -5 -print
+
+find $DIR2 -type f -name "*.bk*"  -cmin -5 | xargs ls -l {} \;
+
+
+
+-exec tar -vzcf {}.gz {} \;
+
+
+-exec tar -vzcf {}.gz {}   \;`"
+
+
+find $DIR2 -type f -name "*.bk*"  -cmin -5 -exec ls -l {} \;
+
+
+
+
+
+
+
+
+-exec tar -vzcf {}.gz {} \;
+for i in *.tar.gz; do
+  tar xzvf "$i" && rm -r "$i"
+done
+
+
+for i in $files; do tar -vzcf {$i}.gz && rm -f "$i" done 
+
+FILES="$@"
+
+
+
+for i in $files; do tar -vzcf {}.gz$i $$ rm -f "$i"
+
+
+
+
+"${array[@]}"
+
+
+for i in "${arrayName[@]}"
+do
+   : 
+   # do whatever on $i
+done
+
+
+#######################################
+
+for i in "${files[@]}";  do ( echo $i ); done
+
+
+
+
+
+
+START
+ TIME=`date +%b-%d-%y`            # This Command will add date in Backup File Name.
+ FILENAME=backup-$TIME.tar.gz    # Here i define Backup file name format.
+ SRCDIR=/imp-data                    # Location of Important Data Directory (Source of backup).
+ DESDIR=/mybackupfolder            # Destination of backup file.
+ tar -cpzf $DESDIR/$FILENAME $SRCDIR
+ #END
+
+
+#!/bin/bash
+files=($(find /var/log/ -mtime -7))
+tar cvfz backup.tar.gz "${files[@]}"
+
+
+
+# #######################################################
+# checking running processes on linux machine 		#
+# date : 		09/20/2017			#
+# Author : 		fwere				#
+# Team  : 		Documentum 			#
+#########################################################
+
+# Getting timestumps of all the running processes 
+
+
+ps -elfyww | grep java
+S UID        PID  PPID  C PRI  NI    RSS      SZ WCHAN  STIME TTY       TIME   CMD
+S root     11386     1 17  80   0 357204 1244770 futex_ 08:07 pts/2 00:00:30   java ... server1
+
+
+
+OVERVIEW 
+
+
+etime > Display elapsed time since the process was started, in the form [[DD-]hh:]mm:ss.
+
+etimes > Display elapsed time since the process was started, in seconds.
+
+
+You need to pass the -o etimes or -o etime to the ps command. The syntax is:
+
+ps -p {PID-HERE} -o etime
+
+ps -p {PID-HERE} -o etimes
+
+#######################################
+
+1: Find PID of a process (say openvpn)
+
+pidof openvpn
+# 6176
+
+How long a openvpn process has been running?
+
+$ ps -p 6176 -o etime
+
+OR
+
+$ ps -p 6176 -o etimes
+
+
+################################################################
+#I am printing PID, command, elapsed time, user ID, and group ID:
+$ ps -p 6176 -o pid,cmd,etime,uid,gid 
+
+
+PID CMD                             ELAPSED   UID   GID
+ 6176 /usr/sbin/openvpn --daemon        15:25 65534 65534
+
+############################################################
+
+##################################################
+
+# checking running processes and time lapses 
+
+# simpler and powwerful command 
+
+ps -eo pid,comm,cmd,start,etime | grep (process)
+
+ps -eo pid, comm, cmd,start,etime | grep httpd
+
+
+#########################################################
+
+# additionsl commands 
+
+ps -eo pid, etime | grep https awk '{print $1}'
+
+ps -eo pid,etime | awk'/^1234/ {print $2}' # if we know the process id to be (12345)
+
+
+
+##############################################
+ps -p $(pgrep find) -o etime= – ""
+
+#  find the PID of PROCESS_NAME
+
+ps aux | awk 'NR == 1 || /PROCESS_NAME/' #  find the PID of PROCESS_NAME
+
+	
+
+STARTSCRIPT=($(for i in "`ls $JBOSS_DIR/server/`"; do for j in "${IndexArray[@]}"; do echo "$i" | grep -i "$j" |grep -i "start"; done ; done))
+
+STARTSCRIPT=($(for i in "`ls $JBOSS_DIR/server/`"; do for j in "${IndexArray[@]}"; do echo "$i" | grep -i "$j" |grep -i "start"; done ; done))
+
+START_DCGDOC="`for i in "`ls $JBOSS_DIR/server/`"; do for j in "${IndexArray[@]}"; do echo "$i" | grep -i "$j" |grep -i "start"| grep -i DCGDOCQ;done; done`"
+
+START_DEPIDOC="`for i in "`ls $JBOSS_DIR/server/`"; do for j in "${IndexArray[@]}"; do echo "$i" | grep -i "$j" |grep -i "start"| grep -i DEPIDOC;done; done`"
+
+START_FUEDOC="`for i in "`ls $JBOSS_DIR/server/`"; do for j in "${IndexArray[@]}"; do echo "$i" | grep -i "$j" |grep -i "start"| grep -i FUEDOC;done; done`"
+
+START_NOTEDOC="`for i in "`ls $JBOSS_DIR/server/`"; do for j in "${IndexArray[@]}"; do echo "$i" | grep -i "$j" |grep -i "start"| grep -i NOTEDOC;done; done`"
+#-----------------------------------------------------------------------------------------------------------------------------------------------------------
+
+STOPSCRIPT=($(for i in "`ls $JBOSS_DIR/server/`"; do for j in "${IndexArray[@]}"; do echo "$i" | grep -i "$j" |grep -i "stop"; done ; done))
+
+STOP_DCGDOC="`for i in "`ls $JBOSS_DIR/server/`"; do for j in "${IndexArray[@]}"; do echo "$i" | grep -i "$j" |grep -i "stop"| grep -i DCGDOCQ;done; done`"
+
+STOP_DEPIDOC="`for i in "`ls $JBOSS_DIR/server/`"; do for j in "${IndexArray[@]}"; do echo "$i" | grep -i "$j" |grep -i "stop"| grep -i DEPIDOC;done; done`"
+
+STOP_FUEDOC="`for i in "`ls $JBOSS_DIR/server/`"; do for j in "${IndexArray[@]}"; do echo "$i" | grep -i "$j" |grep -i "stop"| grep -i FUEDOC;done; done`"
+
+STOP_NOTEDOC="`for i in "`ls $JBOSS_DIR/server/`"; do for j in "${IndexArray[@]}"; do echo "$i" | grep -i "$j" |grep -i "stop"| grep -i NOTEDOC;done; done`"
+#---------------------------------------------------------------------------------------------------------------------------------------------
+
+start() {
+################################################################################################
+      	echo "Starting Dsearch Service"
+       	cd $JBOSS_DIR/server; mv nohup.out nohup.bak
+        if [[ -z "$DSEARCH_STARTUP_SCRIPT" ]] 2>/dev/null; then
+                echo "Blank Missing Dsearch Script";
+    	else
+        	echo "Dsearch Script Found Restarting  Dsearch Process "
+        	cd $JBOSS_DIR/server; nohup ./$DSEARCH_STARTUP_SCRIPT &
+        	echo "OK :   Dsearch Process started successfully"
+        	sleep 15;
+    	fi
+###########################################################################################################
+
+        echo "*********************************************************"
+        echo "Starting DCGDOC Index Service  "
+    
+	if [[ -z "$START_DCGDOC" ]] 2>/dev/null; then
+                echo "DCG Index script missing  Nothing to do"
+        	echo "Skipping to next script"
+    	else
+        	echo "DCG Index files Exist ...Restarting Index process "
+        	cd $JBOSS_DIR/server; nohup ./$START_DCGDOC &
+                echo "OK:"
+        	sleep 15;
+                echo "OK: DCG Index service Started successfully"
+    	fi
+
+
+	echo "*********************************************************"
+        echo "Starting DEPIDOC Index Service  "
+    
+	if [[ -z "$START_DEPIDOC" ]] 2>/dev/null; then
+                echo "DEPI Index script missing  Nothing to do"
+        	echo "Skipping to next script"
+    	else
+        	echo "DEPI Index files Exist ...Restarting Index process "
+        	cd $JBOSS_DIR/server; nohup ./$START_DEPIDOC &
+                echo "OK:"
+        	sleep 15;
+                echo "OK: DEPI Index service Started successfully"
+    	fi
+
+
+	echo "*********************************************************"
+        echo "Starting FUEDOC Index Service "
+    
+	if [[ -z "$START_FUEDOCC" ]] 2>/dev/null; then
+                echo "FUEL Index script missing  Nothing to do"
+        	echo "Skipping to next script"
+    	else
+        	echo "FUEL Index files Exist ...Restarting Index process "
+        	cd $JBOSS_DIR/server; nohup ./$START_FUEDOC &
+                echo "OK:"
+        	sleep 15;
+                echo "OK: FUEL Index service Started successfully"
+    	fi
+
+	echo "*********************************************************"
+        echo "Starting NOTEDOC Index Server "
+    
+	if [[ -z "$START_NOTEDOC" ]] 2>/dev/null; then
+                echo "NOTE Index script missing  Nothing to do"
+        	echo "Skipping to next script"
+    	else
+        	echo "NOTE Index files Exist ...Restarting Index process "
+        	cd $JBOSS_DIR/server; nohup ./$START_NOTEDOC &
+                echo "OK:"
+        	sleep 15;
+                echo "OK: NOTE Index service Started successfully"
+    	fi
+		echo "END..END"
+
+	echo "*********************************************************"
+	echo "*********************************************************"
+
+} 
+
+
+
+
+
+STOP() {
+
+
+	echo "Stopping documentum Index & Dsearch Process "
+        echo "Shutting down DCGDOC Index process....."
+        echo "**************************************************"
+
+        if [[ -z "$STOP_DCGDOC" ]] 2>/dev/null; then
+                echo "DCG EMPTY String Index script missing.... skipping  ............"
+        else
+                echo "DCG Index script exist...Stopping Index Service Now ";
+                cd $JBOSS_DIR/server; ./$STOP_DCGDOC
+                echo "OK:"
+                sleep 15;
+                echo "OK: DCG Index service Stopped successfully"
+        fi
+
+	echo "Stopping documentum Index & Dsearch Process "
+        echo "Shutting down DEPIDOC Index process....."
+        echo "**************************************************"
+
+        if [[ -z "$STOP_DEPIDOC" ]] 2>/dev/null; then
+                echo "DEPI EMPTY String Index script missing.... skipping  ............"
+        else
+                echo "DEPI Index script exist...Stopping Index Service Now ";
+                cd $JBOSS_DIR/server; ./$STOP_DEPIDOC
+                echo "OK:"
+                sleep 15;
+                echo "OK: DEPI Index service Stopped successfully"
+        fi
+
+	echo "Stopping documentum Index & Dsearch Process "
+        echo "Shutting down FUEDOC Index process....."
+        echo "**************************************************"
+
+        if [[ -z "$STOP_FUEDOC" ]] 2>/dev/null; then
+                echo "FUEL EMPTY String Index script missing.... skipping  ............"
+        else
+                echo "FUEL Index script exist...Stopping Index Service Now ";
+                cd $JBOSS_DIR/server; ./$STOP_FUEDOC
+                echo "OK:"
+                sleep 15;
+                echo "OK: FUEL Index service Stopped successfully"
+        fi
+
+	echo "Stopping documentum Index & Dsearch Process "
+        echo "Shutting down NOTEDOC Index process....."
+        echo "**************************************************"
+
+        if [[ -z "$STOP_NOTEDOC" ]] 2>/dev/null; then
+                echo "NOTE EMPTY String Index script missing.... skipping  ............"
+        else
+                echo "Index script exist...Stopping Index Service Now ";
+                cd $JBOSS_DIR/server; ./$STOP_NOTEDOC
+                echo "OK:"
+                sleep 15;
+                echo "OK: NOTE Index service Stopped successfully"
+        fi
+
+################################################################################################
+
+        echo "Stopping Dsearch Service"
+        echo "************************************************************"
+        if [[ -z "$DSEARCH_STOP_SCRIPT" ]] 2>/dev/null; then
+		echo "Empty String Dsearch script missing ...  skipping ....."
+	else
+                echo "Dsearch script exist Stopping Dsearch process Now ...";
+                cd $JBOSS_DIR/server; ./$DSEARCH_STOP_SCRIPT
+                echo "OK:"
+                sleep 15;
+                echo "OK: Dsearch service Stopped successfully"
+        fi
+################################################################################################
+
+}
+
+
+case "$1" in
+  start)
+    start
+    ;;
+  stop)
+    stop
+    ;;
+  reload|restart)
+        $0 stop
+        $0 start
+    ;;
+  *)
+        #echo "Usage: /etc/init.d/tornado-tts {start|stop|restart}"
+        echo "Usage: $0 start|stop|restart|reload"
+        exit 1
+esac
+exit 0
+
+
+
+ egrep --color 'Mem|Webcache|Swap' /proc/meminfo
+MemTotal:       10130520 kB
+MemFree:          192504 kB
+SwapCached:         4576 kB
+SwapTotal:      16023544 kB
+SwapFree:       16007560 kB
+###################################
+
+MemTotal:        5977196 kB
+MemFree:          718076 kB
+
+SwapTotal:      16023544 kB
+SwapFree:       16023544 kB
+
+
+
+
+otal 8
+-rwxr-xr-x. 1 dmadmin ecmteam 1258 Mar 28 11:41 daily_monitor_java_tomcat.sh
+-rwxr-xr-x. 1 dmadmin ecmteam 1257 Mar 28 11:41 java_tomcat_restart.sh
+
+
+ ps -ef | grep dmadmin
+root     19324 19296  0 09:59 pts/0    00:00:00 sudo su_dmadmin
+root     19325 19324  0 09:59 pts/0    00:00:00 su - dmadmin
+dmadmin  19326 19325  0 09:59 pts/0    00:00:00 -sh
+dmadmin  19397 19326 16 10:02 pts/0    00:00:00 ps -ef
+dmadmin  19398 19326  0 10:02 pts/0    00:00:00 grep dmadmin
+$ ./startup.sh
+Using CATALINA_BASE:   /app/documentum/apache-tomcat-6.0.32
+Using CATALINA_HOME:   /app/documentum/apache-tomcat-6.0.32
+Using CATALINA_TMPDIR: /app/documentum/apache-tomcat-6.0.32/temp
+Using JRE_HOME:        /app/documentum/java/1.6.0_27/jre
+Using CLASSPATH:       /app/documentum/apache-tomcat-6.0.32/bin/bootstrap.jar
+
+$ ps -ef | grep dmadmin
+root     19324 19296  0 09:59 pts/0    00:00:00 sudo su_dmadmin
+root     19325 19324  0 09:59 pts/0    00:00:00 su - dmadmin
+dmadmin  19326 19325  0 09:59 pts/0    00:00:00 -sh
+dmadmin  19412     1 50 10:02 pts/0    00:00:22 /app/documentum/java/1.6.0_27/jre/bin/java -Djava.util.logging.config.file=/app/documentum/apache-tomcat-6.0.32/conf/logging.properties -Djava.util.logging.manager=org.apache.juli.ClassLoaderLogManager -Djava.endorsed.dirs=/app/documentum/apache-tomcat-6.0.32/endorsed -classpath /app/documentum/apache-tomcat-6.0.32/bin/bootstrap.jar -Dcatalina.base=/app/documentum/apache-tomcat-6.0.32 -Dcatalina.home=/app/documentum/apache-tomcat-6.0.32 -Djava.io.tmpdir=/app/documentum/apache-tomcat-6.0.32/temp org.apache.catalina.startup.Bootstrap start
+dmadmin  19451 19326  0 10:03 pts/0    00:00:00 ps -ef
+dmadmin  19452 19326  0 10:03 pts/0    00:00:00 grep dmadmin
+
+
+
+
+
+PHYSICAL_CPU=`grep ‘physical id’ /proc/cpuinfo | sort | uniq | wc -l`
+ VIRTUAL_CPU=`grep ^processor /proc/cpuinfo | wc -l`
+ CORES=`grep ‘cpu cores’ /proc/cpuinfo | head -1 | cut -f2 -d “:”`
+MEMORY=`cat /proc/meminfo  | head -1 | awk ‘{printf “%.0f”,$2/(1024*1024)}’`
+CPU_SPEED=`grep “^cpu MHz” /proc/cpuinfo | head -1 | awk -F”:” ‘{printf “%0.2f”,($2/1000)}’`
+CPU_CACHE_SIZE=`grep “^cache size” /proc/cpuinfo| head -1 | awk -F”:” ‘{print $2}’`
+KERNEL=`uname -m`
+
+ARCHS=`grep flags /proc/cpuinfo | uniq | egrep -o -w “tm|lm” | wc -l`
+
+if [ ${ARCHS} -eq 2 ]
+ then
+ SUPPORTED_ARCH=”x86_64,x86?
+ else
+ SUPPORTED_ARCH=”x86?
+ fi
+
+echo “Hostname: $HOSTNAME”
+echo -n “Physical Processors: ”
+echo ${PHYSICAL_CPU}
+
+echo -n “Virtual Processors: ”
+echo ${VIRTUAL_CPU}
+
+echo -n “CPU Cores: ”
+echo ${CORES}
+
+echo -n “CPU Speed: ”
+echo “${CPU_SPEED} GHz”
+
+echo -n “Cache Size: ”
+echo “${CPU_CACHE_SIZE}”
+
+echo -e “Memory: ${MEMORY}G”
+
+echo “Kernel Arch: ${KERNEL}”
+
+echo “CPU Arch: ${SUPPORTED_ARCH}”
+
+echo “Notes:”
+if [ ${CORES} -eq 1 -a ${VIRTUAL_CPU} -gt ${PHYSICAL_CPU} ]
+ then
+ echo -e “\tCPU is Hyperthreading”
+fi
+
+if [ ${ARCHS} -eq 2 -a `echo ${SUPPORTED_ARCH} | grep -c ${KERNEL}` -eq 0 ]
+ then
+ echo -e “\tHardware is 64-bit while installed kernel is 32-bit”
+fi
+
+
+2. Run after reboot with crontab
+
+@reboot /path/to/script
+
+
+#!/bin/bash
+#
+# chkconfig: 35 90 12
+# description: Geth Instance 
+#
+# Get function from functions library
+. /etc/init.d/functions
+# Start the service GETH
+start() {
+        initlog -c "echo -n Starting GETH: "
+        /path/to/geth &
+        ### Create the lock file ###
+        touch /var/lock/subsys/geth
+        success $"geth startup"
+        echo
+}
+# Restart the service geth
+stop() {
+        initlog -c "echo -n Stopping GETH: "
+        killproc geth
+        ### Now, delete the lock file ###
+        rm -f /var/lock/subsys/geth
+        echo
+}
+### main logic ###
+case "$1" in
+  start)
+        start
+        ;;
+  stop)
+        stop
+        ;;
+  status)
+        status geth
+        ;;
+  restart|reload|condrestart)
+        stop
+        start
+        ;;
+  *)
+        echo $"Usage: $0 {start|stop|restart|reload|status}"
+        exit 1
+esac
+exit 0
+
+
+
+
+
+
+
+Linux BASH - Comparison Operators
+ Integer Comparison Operators
+
+Operator Description Example 
+-eq Is Equal To if [ $1 -eq 200 ] 
+-ne Is Not Equal To if [ $1 -ne 1 ] 
+-gt Is Greater Than if [ $1 -gt 15 ] 
+-ge Is Greater Than Or Equal To if [ $1 -ge 10 ] 
+-lt Is Less Than if [ $1 -lt 5 ] 
+-le Is Less Than Or Equal To if [ $1 -le 0 ] 
+== Is Equal To if (( $1 == $2 )) [Note: Used within double parentheses] 
+!= Is Not Equal To if (( $1 != $2 )) 
+< Is Less Than if (( $1 < $2 )) 
+<= Is Less Than Or Equal To if (( $1 <= $2 )) 
+> Is Greater Than if (( $1 > $2 )) 
+>= Is Greater Than Or Equal To if (( $1 >= $2 )) 
+
+  String Comparison Operators
+
+Operator Description Example 
+= or == Is Equal To if [ "$1" == "$2" ] 
+!= Is Not Equal To if [ "$1" != "$2" ] 
+> Is Greater Than (ASCII comparison) if [ "$1" > "$2" ] 
+>= Is Greater Than Or Equal To if [ "$1" >= "$2" ] 
+< Is Less Than if [ "$1" < "$2" ] 
+<= Is Less Than Or Equal To if [ "$1" <= "$2" ] 
+-n Is Not Null if [ -n "$1" ] 
+-z Is Null (Zero Length String) if [ -z "$1"] 
+
+
+
+
+#method_stop.sh
+
+#!/bin/bash
+prog=methodserver
+prog2=webcacheserver
+
+echo -n $"Stopping $prog: "
+
+                #cmd=("cd /app/documentum/fwerescripts; ./method-restart.sh; echo $?")
+cd /app/documentum/fwerescripts; ./method_webcache_start_stop.sh stop
+
+echo " testing if the ALL processes are down "
+
+####################################################################
+OUT=`ps -ef | grep -i methods| wc -l`
+
+if [ $OUT -gt 2 ]; then
+        echo "Method process is up and running:";
+        echo "Manually Killing methods process"
+        ps -ef | grep -i methods  |  awk '{print $2}' |xargs  kill -9 2>/dev/null
+        echo "Done &Good!!"
+else
+        echo "Method process DOWN:";
+        echo "Nothing else to do.....proceeding";
+fi
+
+
+OUT2=`ps -ef | grep -i webcache| wc -l`
+
+if [ $OUT2 -gt 2 ]; then
+        echo "WEBCACHE process is up and running:";
+        echo "Manually Killing Webcache process"
+        ps -ef | grep -i webcache| awk '{print $2}' |xargs  kill -9 2>/dev/null
+        echo "Done &Good!!";
+else
+        echo "WEBCACHE process DOWN:";
+        echo "Nothing else to do.....proceeding";
+fi
+
+
+if [ $? -eq 0 ]; then
+        echo "That was a good job!";
+fi
+
+
+
+crontab -l
+20 3 * * * /usr/local/sysadm/recon/recon > /dev/null 2>&1
+@reboot su - dmadmin -c "/app/documentum/fwerescripts/at_reboot/universal_docbs_methd_webch_start_stop.sh start" >/app/documentum/fwerescripts/at_reboot/reboot.log 2>&1
+
+
+
+---
+- hosts: Prod_Content_Servers
+  tasks:
+  - name: ping all hosts
+    ping:
+	
+  - name: Check method process
+    shell: |
+      RESULT="`ps -ef | grep -i methods | grep -v "startMethodServer.sh" |grep -v grep|wc -l`"
+      if [ $RESULT -ge 1 ]; then
+        echo "Method process UP" ;
+      else
+        echo "Process Down";
+      fi
+      exit 0
+    register: method_result
+
+  - name: check for successes results
+    debug: msg="Method Running"
+    when: method_result.stdout.find('UP') != -1
+
+  - debug: msg="Method DOWN"
+    when:  method_result.stdout.find('UP') == -1
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
