@@ -1,0 +1,562 @@
+
+To: DSA UNIX <DSAUNIX@dom.com>
+Subject: Powershell utility that you can run off your workstation to get AD Posix attributes
+
+With all the ITRCs being generated in our queue for server access we need to determine what a user’s Posix attribute is and what AD group they belong.
+To make that query easier we can use Powershell from our own workstation with an added Powershell module called ActiveDirectory.
+
+Erik has put in a USD ticket to have the following software added to your RunAs Advertised Program list 
+ 
+Once you start the install it will probably take about 15 mins and a restart is required after the install
+
+Once the module has been installed launch powershell (Good idea to have it added to your task bar if you do this often)
+Run the following commands to:
+
+# Import module ActiveDirectory
+Import-Module ActiveDirectory
+
+# Query a user’s Posix attribute (uidNumber, gidNumber, loginShell, Gecos)
+get-aduser <user_dashed_eid> -properties * | fl name,uidNumber,gidNumber
+
+
+# Every user that logs into a Unix server can belong to only “ONE” AD Unix group that starts with App_Ux
+# To get a user’s AD Unix group
+get-aduser <user_dashed_eid> -properties * | Select-Object –ExpandProperty MemberOf | Select-String “App_Ux”
+
+
+## To get the members of an AD Unix group - for example DSA Unix - App_UxDsaUnixPrd_6
+get-adgroup App_UxDSAUnixPrd_6 -properties * | Select-Object -ExpandProperty Members
+
+## To get the gidNumber of an AD Unix group
+get-adgroup App_UxDSAUnixPrd_6 -properties * | fl name,gidNumber
+
+There is a lot more that the module has but these are the basics.
+
+To make it easier so that the ActiveDirectory module gets imported every time you launch Powershell can - create a Windows Powershell profile under your Documents\WindowsPowerShell folder 
+Call it Microsoft.PowerShell_profile.ps1 with the following enteries:
+
+##Import ActiveDirectory Module
+Import-Module ActiveDirectory
+
+#Set Alias for Select-String as “sls”
+Set-Alias -name sls -Value Select-String -Description "Search String" -Option "AllScope"
+
+
+C:\Users\fredr05\AppData\Local\Temp\1
+
+
+
+import cx_Oracle
+import os
+import base64
+import sys
+import time
+
+S = ('*' * 70)
+S1 = ('-' * 70)
+print(S)
+print(S1)
+print('\n\t\t' + '-' * 10 + "\n\t\t**Connecting to DCMT oracle Database**\n\t\t" + '-' * 10)
+try:
+    sys.path.append(r"C:\Users\fredr05\AppData\Local\Programs\Python\Python37-32\database-oracleconnectpython")
+    time.sleep(1)
+    import oracleCDMTUser1
+
+    time.sleep(2)
+    import oracleCDMTDatabase
+
+    time.sleep(2)
+    import oracleCDMTPass
+
+    time.sleep(2)
+
+    if oracleCDMTUser1:
+        OracleUser = oracleCDMTUser1.OracleUser
+    if oracleCDMTDatabase:
+        cdmtOradatabase = oracleCDMTDatabase.cdmtOradatabase
+
+    if oracleCDMTPass:
+        cdmtOraPass = oracleCDMTPass.cdmtOraPass
+
+except Exception as sn:
+    print('\n\t @Hadoop :===>:: Sorry No such module: msg {} '.format(sn))
+    print('\n' + S)
+try:
+    connection = cx_Oracle.connect(OracleUser, cdmtOraPass, cdmtOradatabase, encoding="UTF-8")
+    # connection = cx_Oracle.connect(OracleUser, cdmtOraPass, cdmtOradatabase)
+    cursor = connection.cursor()
+    print('\n\t\t' + '-' * 10 + "\n\t\t**Connection Successful **\n\t\t" + '-' * 10)
+    print('\n\t\t' + '-' * 10 + "\n\t\t**Getting users permissions, Roles etc**\n\t\t" + '-' * 10)
+
+    SessionUserPermission = ("""SELECT * FROM USER_SYS_PRIVS""")
+    AllPermissions = ("""SELECT * FROM DBA_SYS_PRIVS""")
+    SortedPermission = ("""SELECT * FROM DBA_SYS_PRIVS where GRANTEE ='FREDR05'""")
+
+    #QUERIy = "SELECT SOLUTION_ID, SOLUTION_NM FROM METADATA.BI_BIG_DATA_SOLUTIONS ORDER BY SOLUTION_ID"
+    #QUERYx = "SELECT * FROM METADATA.BI_BIG_DATA_SOLUTIONS"
+
+    data1 = cursor.execute(SessionUserPermission )
+    time.sleep(3)
+    data2 = cursor.execute(SortedPermission)
+    time.sleep(3)
+    data3 = cursor.execute(AllPermissions)
+    time.sleep(3)
+
+    #data1 = cursor.execute(QUERI1)
+    #data1 = cursor.execute(QUERI1)
+
+    print('\n\t\t' + '-' * 10 + "\n\t\t**Sessions User  permissions, Roles etc**\n\t\t" + '-' * 10)
+    for data in data1:
+        print(data)
+        time.sleep(2)
+    print('\n\t\t' + '-' * 10 + "\n\t\t**Sorted Specific User  permissions, Roles etc**\n\t\t" + '-' * 10)
+    for data in data2:
+        print(data)
+        time.sleep(2)
+    print('\n\t\t' + '-' * 10 + "\n\t\t**All  permissions, Roles etc**\n\t\t" + '-' * 10)
+    for data in data3:
+        print(data)
+        time.sleep(2)
+    print('\n' + S)
+    # print('\n\t\t' + '-' * 10 + "\n\t\t**Sessions User  permissions, Roles etc**\n\t\t" + '-' * 10)
+    # data1  = cursor.execute("""SELECT * FROM METADATA.BI_BIG_DATA_SOLUTIONS""")
+    # dsn_tns = cx_Oracle.makedsn('localhost', 1521, 'XE')
+    # print(dsn_tns)
+
+    versioning = connection.version.split('.')
+    if versioning[0] == '12':
+        print("Running 12g Oracle")
+    elif versioning[0] == '9':
+        print("Running 9i Oracle")
+    else:
+        print("Manually validate the oracle version you're running")
+        print('\n' + S)
+
+
+except cx_Oracle.DatabaseError as e:
+    raise
+    # printf ('Failed to connect to %s\n',databaseName)
+    # printException (exception)
+    exit(1)
+
+
+
+import cx_Oracle
+import os
+import base64
+import sys
+import time
+
+S = ('*' * 70 )
+S1 = ('-' * 70 )
+print(S)
+print(S1)
+print('\n\t\t' + '-' * 10 + "\n\t\t**Connecting to DCMT oracle Database**\n\t\t" + '-' * 10)
+
+try:
+    sys.path.append(r"C:\Users\fredr05\AppData\Local\Programs\Python\Python37-32\database-oracleconnectpython")
+    time.sleep(1) 
+    import oracleCDMTUser1
+    time.sleep(2)
+    import oracleCDMTDatabase
+    time.sleep(2)
+    import oracleCDMTPass
+    time.sleep(2)
+
+    if oracleCDMTUser1:
+        print(oracleCDMTUser1.OracleUser)
+        OracleUser = oracleCDMTUser1.OracleUser
+    if oracleCDMTDatabase:
+        cdmtOradatabase = oracleCDMTDatabase.cdmtOradatabase
+        print(cdmtOradatabase)
+
+    if oracleCDMTPass:
+        cdmtOraPass = oracleCDMTPass.cdmtOraPass
+        print(cdmtOraPass)
+
+  
+except Exception as sn:
+    print('\n\t @Hadoop :===>:: Sorry No such module: msg {} '.format(sn))
+    print('\n'+ S)
+    
+
+try:
+
+    connection = cx_Oracle.connect(OracleUser, cdmtOraPass, cdmtOradatabase, encoding="UTF-8")
+    #connection = cx_Oracle.connect(OracleUser, cdmtOraPass, cdmtOradatabase)
+
+    cursor = connection.cursor()
+    QUERI1="SELECT SOLUTION_ID, SOLUTION_NM FROM METADATA.BI_BIG_DATA_SOLUTIONS ORDER BY SOLUTION_ID"
+    QUERY2="SELECT * FROM METADATA.BI_BIG_DATA_SOLUTIONS"
+    
+    data1 = cursor.execute(QUERI1)
+
+    #data1  = cursor.execute("""SELECT * FROM METADATA.BI_BIG_DATA_SOLUTIONS""")
+    dsn_tns = cx_Oracle.makedsn('localhost', 1521, 'XE')
+    print(dsn_tns)
+
+    versioning = connection.version.split('.')
+    if versioning[0] == '12':
+        print("Running 12g Oracle")
+    elif versioning[0]=='9':
+        print("Running 9i Oracle")
+    else:
+        print("Manually validate the oracle version you're running")
+        print('\n'+ S)
+
+    
+
+    for data in data1:
+        print(data[1])
+except cx_Oracle.DatabaseError as e:
+    raise
+    #printf ('Failed to connect to %s\n',databaseName)
+    #printException (exception)
+    exit (1)
+
+
+encryption 
+
+import cx_Oracle
+import os
+import base64
+
+
+#orauser
+BINDPASS = r"C:\Users\fredr05\Desktop\selenium_python\encryptedpasswd\oraEncrptdUuser.txt"
+with open(BINDPASS, 'r') as psfile:
+    for line in psfile:
+        user = line.encode("utf-8")
+        OracleUser = base64.b64decode(user).decode("utf-8")
+        
+#EncrptdCDMTdatabase
+#@@@@@@@@@@@
+BINDPASS = r"C:\Users\fredr05\Desktop\selenium_python\encryptedpasswd\EncrptdCDMTdatabase.txt"
+with open(BINDPASS, 'r') as psfile:
+    for line in psfile:
+        Oradatabase = line.encode("utf-8")
+        cdmtOradatabase = base64.b64decode(Oradatabase).decode("utf-8")
+
+###############################
+#@@@@@@@@@@@@@ cdmtencrptdPass
+
+BINDPASS = r"C:\Users\fredr05\Desktop\selenium_python\encryptedpasswd\cdmtencrptdPass.txt"
+with open(BINDPASS, 'r') as psfile:
+    for line in psfile:
+        passwd = line.encode("utf-8")
+        cdmtOraPass = base64.b64decode(passwd).decode("utf-8")
+        #user = [ base64.b64decode(line)  for line in psfile]
+        #cdmtOraPass = [ base64.b64decode(line).decode("utf-8") for line in psfile]
+        #cdmtOraPass = [ base64.b64decode(line.decode("utf-8")) for line in psfile]
+        #print(cdmtOraPass)
+        
+        
+try:
+
+    connection = cx_Oracle.connect(OracleUser, cdmtOraPass, cdmtOradatabase, encoding="UTF-8")
+    #connection = cx_Oracle.connect(OracleUser, cdmtOraPass, cdmtOradatabase)
+
+    cursor = connection.cursor()
+    data1  = cursor.execute("""SELECT * FROM METADATA.BI_BIG_DATA_SOLUTIONS""")
+    dsn_tns = cx_Oracle.makedsn('localhost', 1521, 'XE')
+    print(dsn_tns)
+    #(DESCRIPTION=(ADDRESS=(PROTOCOL=TCP)(HOST=localhost)(PORT=1521))(CONNECT_DATA=(SID=XE)))
+    versioning = connection.version.split('.')
+    if versioning[0] == '12':
+        print("Running 12g Oracle")
+    elif versioning[0]=='9':
+        print("Running 9i Oracle")
+    else:
+        print("Manually validate the oracle version you're running")
+
+    
+
+    for data in data1:
+        print(data[1])
+except cx_Oracle.DatabaseError as e:
+    raise
+    #printf ('Failed to connect to %s\n',databaseName)
+    #printException (exception)
+    exit (1)
+
+#descrypt 
+import cx_Oracle
+import os
+import base64
+
+
+#orauser
+BINDPASS = r"C:\Users\fredr05\Desktop\selenium_python\encryptedpasswd\oraEncrptdUuser.txt"
+with open(BINDPASS, 'r') as psfile:
+    for line in psfile:
+        user = line.encode("utf-8")
+        OracleUser = base64.b64decode(user).decode("utf-8")
+        
+#EncrptdCDMTdatabase
+#@@@@@@@@@@@
+BINDPASS = r"C:\Users\fredr05\Desktop\selenium_python\encryptedpasswd\EncrptdCDMTdatabase.txt"
+with open(BINDPASS, 'r') as psfile:
+    for line in psfile:
+        Oradatabase = line.encode("utf-8")
+        cdmtOradatabase = base64.b64decode(Oradatabase).decode("utf-8")
+
+###############################
+#@@@@@@@@@@@@@ cdmtencrptdPass
+
+BINDPASS = r"C:\Users\fredr05\Desktop\selenium_python\encryptedpasswd\cdmtencrptdPass.txt"
+with open(BINDPASS, 'r') as psfile:
+    for line in psfile:
+        passwd = line.encode("utf-8")
+        cdmtOraPass = base64.b64decode(passwd).decode("utf-8")
+        #user = [ base64.b64decode(line)  for line in psfile]
+        #cdmtOraPass = [ base64.b64decode(line).decode("utf-8") for line in psfile]
+        #cdmtOraPass = [ base64.b64decode(line.decode("utf-8")) for line in psfile]
+        #print(cdmtOraPass)
+        
+        
+try:
+
+    connection = cx_Oracle.connect(OracleUser, cdmtOraPass, cdmtOradatabase, encoding="UTF-8")
+    #connection = cx_Oracle.connect(OracleUser, cdmtOraPass, cdmtOradatabase)
+
+    cursor = connection.cursor()
+    data1  = cursor.execute("""SELECT * FROM METADATA.BI_BIG_DATA_SOLUTIONS""")
+    dsn_tns = cx_Oracle.makedsn('localhost', 1521, 'XE')
+    print(dsn_tns)
+    #(DESCRIPTION=(ADDRESS=(PROTOCOL=TCP)(HOST=localhost)(PORT=1521))(CONNECT_DATA=(SID=XE)))
+    versioning = connection.version.split('.')
+    if versioning[0] == '12':
+        print("Running 12g Oracle")
+    elif versioning[0]=='9':
+        print("Running 9i Oracle")
+    else:
+        print("Manually validate the oracle version you're running")
+
+    
+
+    for data in data1:
+        print(data[1])
+except cx_Oracle.DatabaseError as e:
+    raise
+    #printf ('Failed to connect to %s\n',databaseName)
+    #printException (exception)
+    exit (1)
+
+
+encode 
+import base64
+
+
+PASSWDFILE = r"C:\Users\fredr05\Desktop\selenium_python\encryptedpasswd\cdmtPassword.txt"
+with open(PASSWDFILE, 'r') as psfile:
+    for line in psfile:
+        passwd = line.encode("utf-8")
+        passwd1 = base64.b64encode(passwd).decode("utf-8")
+        encryptedpwd = passwd1
+        #print(passwd1)
+        #print(passwd1.strip())
+        if  encryptedpwd:
+            print(encryptedpwd)
+            newpath  = r"C:\Users\fredr05\Desktop\selenium_python\encryptedpasswd\cdmtencrptdPass.txt"
+            new_file = open(newpath, "wb")
+            new_file.write(encryptedpwd.encode("utf-8"))
+            new_file.close()
+            print(line)
+            newpasswd = base64.b64decode(encryptedpwd).decode("utf-8")
+            print(newpasswd)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Thank You
+
+Very Respctfully
+
+Fredrick Were | Enterprise Data Analytics
+Office:  804-273-2844 |    Mobile: (423) 579-0481 | Mail: fredrick.o.were@dominionenergy.com
+Dominion Resources Services, Inc. | 8th and Main/5th Floor | 707 E. Main St, Richmond, VA 23219
+
+ 
+“But I trust in your unfailing Love; Myheart rejoices in your salvation. I will Sing  the LORD’S praise,For he has been good to me”Psalm 13:5 -6
+
+
+
+[bigsql@ricplhadoop1004 ~]$ bigsql stop
+Done!
+New ticket is stored in cache file /export/home/bigsql/krb5cc_bigsql
+Stopping Big SQL               :
+OK
+Stopping Big SQL Scheduler     : OK
+[bigsql@ricplhadoop1004 ~]$ bigsql start
+Done!
+New ticket is stored in cache file /export/home/bigsql/krb5cc_bigsql
+Global config update           : OK
+Starting Big SQL Scheduler     : OK
+Starting Big SQL               : OK
+[bigsql@ricplhadoop1004 ~]$
+import os
+total_size = 0
+for root, dirs, files in os.walk("dir"):
+    for f in files:
+        total_size += os.path.getsize(os.path.join(root, f))
+print total_size
+
+
+import os
+def get_size(start_path='.'):
+    total_size = 0
+    seen = {}
+    for dirpath, dirnames, filenames in os.walk(start_path):
+        for f in filenames:
+            fp = os.path.join(dirpath, f)
+            try:
+                stat = os.stat(fp)
+            except OSError:
+                continue
+
+            try:
+                seen[stat.st_ino]
+            except KeyError:
+                seen[stat.st_ino] = True
+            else:
+                continue
+
+            total_size += stat.st_size
+
+    return total_size
+
+print get_size()
+###########################################################
+
+import functools
+
+from functools  import *
+import time
+
+
+def do_twice(func):
+        @functools.wraps(func)
+        def wrapper_do_twice(*args, **kwargs):
+                func(*args, **kwargs)
+                return func(*args, **kwargs)
+        return wrapper_do_twice
+
+
+def decorator(func):
+        @functools.wraps(func)
+        def wrapper_decorator(*args, **kwargs):
+                #do something
+                value = func(*args, **kwargs)
+                #do something
+                return value
+        return decorator
+
+
+
+
+def  timer(func):
+        """Print the runtime of the decorated function"""
+
+        @functools.wraps(func)
+        def wrapper_timer(*args, **kwargs):
+                start_time = time.perf_counter() #1
+                value = func(*args, **kwargs)
+                # Do something after
+
+                end_time = time.perf_counter() #2
+                run_time = end_time - start_time #3
+                print("Finished {!r} in {:.4f} sec".format(func.__name__, run_time))
+                return value
+        return wrapper_timer
+
+ 
+
+
+Test
+#########################################################
+from timedecorator import *
+import os
+import sys
+import subprocess
+
+
+
+
+
+
+@do_twice
+def say_whee():
+        print("wee!")
+
+@timer
+def waste_some_time(num_times):
+        for _ in range(num_times):
+                sum([i**2 for i in range(10000)])
+
+@timer
+def ping(period):
+        hostname = "ricplhadoop1017"
+        for _ in range(period):
+                #response = os.system("ping -c " + str(period) + hostname)
+                #response = os.system("ping -c 2"  + hostname)
+                ping_response = subprocess.Popen(["/bin/ping", "-c1", "-w100", hostname], stdout=subprocess.PIPE).stdout.read()
+
+
+                print(ping_response)
+
+if __name__ == "__main__":
+        say_whee()
+        waste_some_time(1000)
+        ping(5)
+
+
+ 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Thank You
+
+Very Respctfully
+
+Fredrick Were | Enterprise Data Analytics
+Office:  804-273-2844 |    Mobile: (423) 579-0481 | Mail: fredrick.o.were@dominionenergy.com
+Dominion Resources Services, Inc. | 8th and Main/5th Floor | 707 E. Main St, Richmond, VA 23219
+
+ 
+“But I trust in your unfailing Love; Myheart rejoices in your salvation. I will Sing  the LORD’S praise,For he has been good to me”Psalm 13:5 -6
+
+
