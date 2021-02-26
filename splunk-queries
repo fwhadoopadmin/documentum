@@ -1,0 +1,171 @@
+
+  <row>
+    <panel>
+      <chart>
+        <search>
+          <query>index=_internal sourcetype=splunkd log_level!="INFO" | timechart count</query>
+          <earliest>-24h@h</earliest>
+          <latest>now</latest>
+          <sampleRatio>1</sampleRatio>
+        </search>
+        <option name="charting.axisLabelsX.majorLabelStyle.overflowMode">ellipsisNone</option>
+        <option name="charting.axisLabelsX.majorLabelStyle.rotation">0</option>
+        <option name="charting.axisTitleX.visibility">visible</option>
+        <option name="charting.axisTitleY.visibility">visible</option>
+        <option name="charting.axisTitleY2.visibility">visible</option>
+        <option name="charting.axisX.abbreviation">none</option>
+        <option name="charting.axisX.scale">linear</option>
+        <option name="charting.axisY.abbreviation">none</option>
+        <option name="charting.axisY.scale">linear</option>
+        <option name="charting.axisY2.abbreviation">none</option>
+        <option name="charting.axisY2.enabled">0</option>
+        <option name="charting.axisY2.scale">inherit</option>
+        <option name="charting.chart">column</option>
+        <option name="charting.chart.bubbleMaximumSize">50</option>
+        <option name="charting.chart.bubbleMinimumSize">10</option>
+        <option name="charting.chart.bubbleSizeBy">area</option>
+        <option name="charting.chart.nullValueMode">gaps</option>
+        <option name="charting.chart.showDataLabels">none</option>
+        <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
+        <option name="charting.chart.stackMode">default</option>
+        <option name="charting.chart.style">shiny</option>
+        <option name="charting.drilldown">none</option>
+        <option name="charting.layout.splitSeries">0</option>
+        <option name="charting.layout.splitSeries.allowIndependentYRanges">0</option>
+        <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
+        <option name="charting.legend.mode">standard</option>
+        <option name="charting.legend.placement">right</option>
+        <option name="charting.lineWidth">2</option>
+        <option name="trellis.enabled">0</option>
+        <option name="trellis.scales.shared">1</option>
+        <option name="trellis.size">medium</option>
+      </chart>
+    </panel>
+  </row
+
+
+
+
+
+
+##########################################################
+
+
+This worked for me!
+
+index=perfstats sourcetype=PerfmonMk* host=servername C | timechart avg("%_Free_Space") by host
+
+
+
+This worked for me!
+
+index=main sourcetype=PerfmonMk* host=servername C | timechart avg("%_Free_Space") by host
+
+
+
+###############################################
+
+
+Configure file monitor inputs in inputs.conf
+If you would like to collect only local JBoss log files, you can edit inputs.conf directly to create the file monitor inputs instead of using the setup page.
+
+Note: If you would also like to collect thread information, you must use the setup page for the Splunk Add-on for JBoss to configure the dumpAllThreads input.
+
+1. Create an inputs.conf file in $SPLUNK_HOME/etc/apps/Splunk_TA_jboss/local.
+
+2. Add the following stanzas. Modify the directory name if necessary to use the actual directory your JBoss files are stored in.
+
+[monitor:///Applications/jboss-eap-6.4/standalone/log/server.log*]
+disabled = false
+followTail = false
+index = main
+sourcetype = jboss:server:log
+ 
+[monitor:///Applications/jboss-eap-6.4/standalone/log/*gc.log*]
+disabled = false
+followTail = false
+index = main
+sourcetype = jboss:gc:log
+########################################
+
+
+Index=*r  |stats count by sourcetype
+
+###############################################################
+index=main sourcetype=syslog NOT status="200" |stats count #{ error count}
+#############################################################
+
+index=main sourcetype=* |chart  count by host, method
+
+
+
+index=main sourcetype=* | eval kb=bytes/1024 | timechart span=5m mean(kb) min(kb)max(kb)
+
+
+index=main sourcetype=* | eval kb=bytes/1024 | timechart span=5m mean(kb) min(kb)max(kb)
+
+
+
+##############################################################
+# memory usage 
+###############################################
+index=main sourcetype=* | eval mem_used_MB=(mem-used/1024)/1024 | eval mem_total_MB=(mem_total/1024)/1024| timechart span=1m values(mem_total_MB) AS Total_Mem_Avail_MB, count AS Total_Calls, avg(mem_used_MB) AS Avg_Mem_Used_MB, avg(response_time) AS Avg_Response_Time
+###########################################################
+
+#################  
+1. host=host sourcetype="df" "/dev/sda2" | dedup host | chart avg(PercentUsedSpace) by host
+host=host sourcetype="df" "/dev/sda2" | dedup host | table *
+
+Pasted from <https://answers.splunk.com/answers/259771/display-disk-space-usage-in-chart-format.html> 
+index="perfmon" counter="Free Megabytes" instance="C:" host="my_TargetServer" | timechart partial=f span=30 min(Value) as "Free Space" | eval marker = "Today" | eval _time = _time+1800 | append [search index="perfmon" counter="Free Megabytes" instance="C:" host="my_TargetServer" earliest=-7d@d-30m latest=-6d@d-30m | timechart span=30m min(Value) as "Free Space" | eval marker="Last Week" | eval _time = _time+86400*7+1800] | timechart min(Free Space) by marker
+
+Pasted from <https://answers.splunk.com/answers/39419/finding-change-in-disk-space.html> 
+
+
+2. earliest=-1d@d latest=@d sourcetype=diskspace 
+3. | stats max(DiskSpace) as DiskSpace by server 
+4. | eval t="today"
+5. | append [ search earliest=-3m-1d@d latest=-3m@d sourcetype=diskspace 
+6. | stats max(DiskSpace) as DiskSpace by server
+7. | eval t="threemonthsago" ]
+8. | chart max(DiskSpace) by server,t
+9. | eval changeinspace = today-threemonthsago
+10. | sort - changeinspace
+
+11. #############################
+12. sourcetype=df | multikv | dedup host,Filesystem | search MountedOn="/mnt/sansmount" | rex field=UsePct "(?<usage>\d+)" | where usage>90 | eval _raw="Filesystem "+Filesystem+" (mount point "+MountedOn+") on host "+host+" is "+UsePct+" full!" | fields - *
+13. #################
+
+http://frwere1workstation.fios-router.home:8000/en-US/app/search/logs_monitor
+
+| eval statusNum=if(status="OK",0,1) | rangemap field=statusNum low=0-0 severe=1-9999999 default=Severe  #(investigate)
+Pasted from <https://answers.splunk.com/answers/289714/how-to-check-if-a-service-is-running-and-display-i.html> 
+#################################
+| rest /services/server/status/resource-usage/splunk-processes | search process=splunkweb | table splunk_server pid
+
+Pasted from <https://answers.splunk.com/answers/127365/using-a-rest-command-to-query-the-status-of-the-splunkweb-process.html> 
+
+ConnectionError  |stats count by sourcetype
+
+index=main source="/var/log/audit/audit.log" | stats count by MonthDay | stats avg(count) AS  AvgHitsPerDay
+
+index=main source="/var/log/audit/audit.log"   | top 10   hostname
+
+
+###########################################
+
+
+source="/etc/httpd/logs/simpleapp-access.log" | rex "(?<IP_add>\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})" |g
+eoip IP_add
+
+
+https://www.symantec.com/connect/articles/using-splunk-distributed-cluster-security-analysis
+
+
+
+
+
+
+
+
+
