@@ -1,0 +1,366 @@
+2. The applications sending real-time requests to Content Transformation Services need to be
+configured such that the requests do not go into "CTS_Async”.
+a. Login to the Application Server machine hosting your application.
+b. Navigate to the Content Transformation Services preferences.xml and open it
+in a text editor.
+
+c. Use this configuration element to specify a list of semicolon separated Content Transformation
+Services instances.
+ServerProperty Key="CTS_SkipList" Description="list of cts instances
+(semicolon separated) to skip (scalability)" Value="CTS_Async;
+<other-cts-instances>"/>
+EMC Documentum Content Transformation Services Transformation Suite Version 7.1 Administration Guide 31
+Configuration and Administration Tasks and Tips
+Note: Use the hostname as it appears in cts_instance_info table. To retrieve the hostname,
+run the "Select hostname from cts_instance_info” DQL.
+With these changes, "CTS_Realtime” will not pick up any of the queue items and will be dedicated
+only for the real-time requests. The "CTS_Async” will not receive any of the real-time requests and
+will process only the queue items. This approach can be scaled up and applied to configure multiple
+Content Transformation Services instances for handling either real-time or asynchronous requests.
+
+
+Finding file format names
+In the following DQL statements for setting the default_storage for format objects, file formats are
+entered, not file extensions. File format names can be found by running the following DQL statement:
+select * from dm_format where dos_extension = ’extension’
+For example, the following DQL statement will find the name of the mov extension:
+select * from dm_format where dos_extension = ’mov’
+The result of the mov query will be one record, where quicktime is the proper format name for the
+
+mov extension:
+r_object_id name description dos_extension
+2701e306800001bf quicktime QuickTime Movie mov
+
+
+For example, if the Windows Media file formats are to be stored in streaming_store_01, the statement
+should appear as follows:
+UPDATE dm_format OBJECTS
+SET default_storage=(SELECT r_object_id FROM dm_filestore
+WHERE name =’streaming_store_01’)
+WHERE name in (‘wmv’, ‘wma’, ‘wmx’, ‘wax’, ‘asf’)
+
+
+
+The following example shows a test session for Real Helix Universal Server on Windows.
+To test the Real Helix server on Windows:
+1. Enter the text in bold, when prompted:
+/iapi32
+Please enter a repository name (docubase) : dmtestdb
+Please enter a user (Documentum): <user>
+EMC Documentum Content Transformation Services Transformation Suite Version 7.1 Administration Guide 37
+Configuration and Administration Tasks and Tips
+Please enter password for Documentum :<password>
+Documentum iapi - Interactive API interface
+(c) Copyright Documentum, Inc., 1992-2001
+All rights reserved.
+Client Library Release 5.1.0.64 Win32
+Connecting to Server using repository dmtestdb
+[DM_SESSION_I_SESSION_START]info: "Session
+011e9a8b80040107 started
+for user Documentum."
+Connected to Documentum Server running Release
+5.1.0.64 Win32.Oracle
+Session id is s0
+API> create,c,dm_document
+...
+091e9a8b80037d00
+API> set,c,l,object_name
+SET> Streaming test
+...
+OK
+API> set,c,l,a_storage_type
+SET> streaming_store_01
+...
+OK
+API> setfile,c,l,C:\Program Files\Real\RealServer\
+Content\real8video.rm,rm
+...
+OK
+API> save,c,l
+...
+OK
+API> apply,c,l,GET_FILE_URL,FORMAT,S,rm
+...
+q0
+API> next,c,q0
+...
+OK
+API> dump,c,q0
+...
+USER ATTRIBUTES
+result : T
+base_url: rtsp://eng178:554/mountpoint1/
+store : streaming_store_01
+path : 001e9a8b\80\00\00\42.rm
+ticket :
+SYSTEM ATTRIBUTES
+APPLICATION ATTRIBUTES
+INTERNAL ATTRIBUTES
+API> close,c,q0
+...
+OK
+API>
+
+###################################################################################
+Content Transformation Services clean up job
+
+Content Transformation Services provides a generic clean up job utility for cleaning up orphaned or
+invalid objects from the repository, provided that the deletion can be performed through a specific,
+configured DQL.
+The following unused transformation related requests or response objects are examples of orphaned
+objects:
+
+• During a transformation request using Content Transformation Services, a transformation request
+object of the dm_transform_request type is created in the repository. This object may remain in
+the repository if the clearOnExit flag on the CTSRequest object is not set to TRUE.
+
+• Similarly, a dm_cts_response object is created in the repository during every transformation
+process, if the reporting configuration is enabled in the repository. These objects can get
+accumulated in the repository over time causing a disk space issue.
+
+A Server Java method is implemented for the Content Transformation Services CleanUp Job. The
+Transformation DAR is responsible for deploying this server job and performing additional docbase
+object updates. The job is made inactive Out-of-the-Box. If required, the job can be enabled through
+Documentum Administrator.
+
+#################################################################################
+
+
+Job configuration options
+Jobs are made further configurable using ctsJobs.xml, which is deployed in the repository as
+part of DAR installation process. This configuration option is provided for the easy enhancement
+of this feature. The configuration file, ctsJobs.xml, is deployed into the repository folder
+/System/Applications/Transformation as part of the DAR installation process.
+One or more <Job> tags can be associated with any job to initiate more than one deletion
+process. For example, the same default cts_cleanup method or job can be used for deleting both
+dm_transform_request and dm_cts_response objects, where these objects are detected through
+different DQLs. Out-of-the-Box, the following DQLS are configured in the ctsJobs.xml for deleting
+request or response objects.
+• Cleanup DQL entry for deleting transformation request objects:
+<Job name="cts_cleanup" description="delete the orphaned transformation
+related request objects">
+<ServerProperty Key="delegate_class" Description="delagate class"
+Value="com.emc.documentum.ct.job.services.DefaultCleanUpService" />
+<ServerProperty Key="dql" Value="select r_object_id from dm_transform_request
+where DATEDIFF(day, "r_creation_date", DATE(TODAY))>10" Description="DQL
+to identify the object to be deleted" />
+</Job >
+
+
+
+• Cleanup DQL entry for deleting transformation response objects:
+<Job name="cts_cleanup" description="delete the invalid transformation
+related response objects">
+<ServerProperty Key="delegate_class" Description="delagate class"
+Value="com.emc.documentum.cts.job.services.DefaultCleanUpService" />
+<ServerProperty Key="dql" Value="select r_object_id from dm_cts_response
+where DATEDIFF(day, "r_creation_date", DATE(TODAY))>10" Description="DQL
+to identify the object to be deleted" />
+</Job >
+
+################################################################
+Content Transformation Services job Log4j configuration
+
+The log file for this job can be made available on the Content Server by updating the following
+log4j.properties file.
+
+$Documentum\jboss7.1.1\server\DctmServer_MethodServer\deployments\ServerApps.ear\APP-INF\classes\log4j.properties
+
+Add the following entry in the log4j.properties file to obtain the Content Transformation
+Services job related log information:
+#---------------------------------------------------------
+log4j.category.com.emc.documentum.cts.job=DEBUG, CTSJobsAppender
+log4j.appender.CTSJobsAppender=org.apache.log4j.DailyRollingFileAppender
+log4j.appender.CTSJobsAppender.File=$DOCUMENTUM/jboss7.1.1/server/
+DctmServer_MethodServer/logs/cts_jobs.log
+log4j.appender.CTSJobsAppender.Append=true
+log4j.appender.CTSJobsAppender.layout=org.apache.log4j.PatternLayout
+log4j.appender.CTSJobsAppender.layout.ConversionPattern=%d{HH\:mm\:ss,SSS}
+%5p [%10t] %c{1} - %5x %m%n
+log4j.appender.CTSJobsAppender.DatePattern=’.’yyyy-ww-dd
+
+
+PDF compliance not working
+For PDF/A and PDF/X compliance, the latest version of Ghostscript is required. The EMC
+Documentum Environment and System Requirements Guide document contains information about the
+supported version.
+62 EMC Documentum Content Transformation Services Transformation Suite Version 7.1 Administration Guide
+Configuration and Administration Tasks and Tips
+To enable PDF/A compliance, install Ghostscript and edit <GSlatest version>/lib/PDFA_
+def.ps, and update the following line:
+Change:
+/ICCProfile (ISO Coated sb.icc) % Customize.
+To:
+/ICCProfile (C:/Documentum/CTS/lib/USWebCoatedSWOP.icc) % Customize.
+Note: USWebCoatedSWOP.icc is a sample CMYK icc profile. You can choose the required CMYK icc
+profile. However, ensure that the icc profile file path does not have any empty spaces.
+To enable PDF/X compliance, install the latest version of Ghostscript and edit <GSlatest
+version>/lib/PDFX_def.ps, and update the following line:
+Change:
+/ICCProfile (ISO Coated sb.icc) def % Customize or remove.
+To:
+%/ICCProfile (ISO Coated sb.icc) def % Customize or remove.
+
+#################################################
+
+Controlling the size of PDF renditions
+
+Conversion of Microsoft Office documents to PDF results in large-sized documents.
+To create small-sized PDF renditions from Microsoft Word documents, set the following options in
+the document_to_pdf.xml command line file:
+<PDFSETTINGS TEXTCOMPRESSION="Flate" PRESERVEFORMFIELDS="false">
+<FONTEMBEDDING ENABLED="Yes" PARTIALFONTS="Yes" STANDARDFONTS="No"/>
+</PDFSETTINGS>
+Note: Content Transformation Services must be restarted for the command line file changes to take
+effect.
+##############################
+
+Generating a specific number of storyboard renditions
+On importing a document, Content Transformation Services can be modified to generate a specific
+number of storyboard renditions instead of generating all renditions.
+1. Stop Content Transformation Services. Update the CTSProfileService.xml to set the
+forClient field to "LEGACY" instead of "XCP". Start Content Transformation Services.
+2. If you require only 10 pages of storyboard, then add the following InnerTokenMapping to
+both JPEG_LRES and JPEG_STORY storyboard_pdfstoryboard inner profiles (PDF_processing
+profiles) and check-in the profile.
+<InnerTokenMapping LocalProfileToken="10" InnerProfileToken="doc_token_maxPages"
+Literal="true"/>
+The register_legacy.xml must be updated with following profile sequence, so this feature works
+for Document, PDF, MSG, and TIFF formats.
+76 EMC Documentum Content Transformation Services Transformation Suite Version 7.1 Administration Guide
+Configuration and Administration Tasks and Tips
+!-- For PDF formats-->
+<ProfileSequence>
+<InnerProfile path="/System/Media Server/System Profiles/pdf_processing"
+waitOnCompletion="true" useTargetFormat="true">
+<InnerTokenMapping LocalProfileToken="true" InnerProfileToken="overwrite_rendition"
+Literal="true"/>
+</InnerProfile>
+<!-- For TIFF formats -->
+<InnerProfile path="/System/Media Server/System Profiles/tiff_registration"
+waitOnCompletion="true" useTargetFormat="true">
+<InnerTokenMapping LocalProfileToken="true" InnerProfileToken="overwrite_rendition"
+Literal="true"/>
+<InnerTokenMapping LocalProfileToken="pdf" InnerProfileToken="doc_token_targetFormat"
+Literal="true"/>
+</InnerProfile>
+<!-- For MSG formats -->
+<InnerProfile path="/System/Media Server/System Profiles/msg_registration"
+waitOnCompletion="true" useTargetFormat="true">
+<InnerTokenMapping LocalProfileToken="true" InnerProfileToken="overwrite_rendition"
+Literal="true"/>
+<InnerTokenMapping LocalProfileToken="pdf" InnerProfileToken="doc_token_targetFormat"
+Literal="true"/>
+</InnerProfile>
+<!-- For all types of document formats -->
+<InnerProfile path="/System/Media Server/System Profiles/document_registration"
+waitOnCompletion="true" useTargetFormat="true">
+<InnerTokenMapping LocalProfileToken="true" InnerProfileToken="overwrite_rendition"
+Literal="true"/>
+<InnerTokenMapping LocalProfileToken="pdf" InnerProfileToken="doc_token_targetFormat"
+Literal="true"/>
+</InnerProfile>
+</ProfileSequence>
+
+#####################################################
+
+
+Creating a PDF rendition on import
+After enabling the formats for rich media, modify the Register Profile to activate the PDF rendition
+on import.
+To activate the PDF rendition on import:
+1. In the repository, browse to System/Media Server/System Profiles and check out the Register
+Profile.
+2. Open the Register Profile in an XML or text editor.
+3. Change the following tag:
+<Format source="<sample>" target="<sample>"/>
+to
+
+<Format source="<Add source format here>" target="<Add target format here>"/>
+For example, to enable PDF renditions for Microsoft Word documents, your tag would look like
+the following:
+
+<Format source="msw8" target="msw8"/>
+
+Note: Source and target formats are the same in the register profile. This is because processing
+does not start from this profile; the source is passed to the next profile.
+4. Add the following tags to the <ProfileSequence> section of the relevant register_xxxx.xml, if
+it is not already included:
+
+
+<InnerProfile path="/System/Media Server/System Profiles/
+document_to_pdf" waitOnCompletion="true" useTargetFormat="true">
+<InnerTokenMapping LocalProfileToken="pdf" InnerProfileToken=
+"doc_token_targetFormat" Literal="true"/>
+<InnerTokenMapping LocalProfileToken="PDFVersion15"
+InnerProfileToken="doc_token_pdfVersion" Literal="true"/>
+<InnerTokenMapping LocalProfileToken="Automatic" InnerProfileToken
+="doc_token_usePrinterMetrics" Literal="true"/>
+<InnerTokenMapping LocalProfileToken="600" InnerProfileToken=
+"doc_token_resolution" Literal="true"/>
+<InnerTokenMapping LocalProfileToken="Yes" InnerProfileToken=
+"doc_token_optimize" Literal="true"/>
+<InnerTokenMapping LocalProfileToken="Yes" InnerProfileToken=
+"doc_token_enableBookMarks" Literal="true"/>
+<InnerTokenMapping LocalProfileToken="DocumentContent"
+InnerProfileToken="doc_token_printType" Literal="true"/>
+<InnerTokenMapping LocalProfileToken="false" InnerProfileToken
+="overwrite_rendition" Literal="true"/>
+<InnerTokenMapping LocalProfileToken="legacy" InnerProfileToken=
+"transformation_type" Literal="true"/>
+<!security settings>
+<InnerTokenMapping LocalProfileToken="No" InnerProfileToken=
+"doc_token_enableSecurity" Literal="true"/>
+<InnerTokenMapping LocalProfileToken="40bit" InnerProfileToken=
+"doc_token_encryptionMode" Literal="true"/>
+<InnerTokenMapping LocalProfileToken="Disabled" InnerProfileToken=
+"doc_token_changesAllowed" Literal="true"/>
+<InnerTokenMapping LocalProfileToken="Disabled" InnerProfileToken=
+"doc_token_enableAccess" Literal="true"/>
+<InnerTokenMapping LocalProfileToken="Disabled" InnerProfileToken=
+"doc_token_docAssembly" Literal="true"/>
+<InnerTokenMapping LocalProfileToken="Disabled" InnerProfileToken=
+EMC Documentum Content Transformation Services Transformation Suite Version 7.1 Administration Guide 79
+Configuration and Administration Tasks and Tips
+"doc_token_formFieldFilling" Literal="true"/>
+<InnerTokenMapping LocalProfileToken="Disabled" InnerProfileToken=
+"doc_token_printing" Literal="true"/>
+<InnerTokenMapping LocalProfileToken="Disabled" InnerProfileToken=
+"doc_token_allowCopy" Literal="true"/>
+<InnerTokenMapping LocalProfileToken=" " InnerProfileToken=
+"doc_token_secOpass" Literal="true"/>
+<InnerTokenMapping LocalProfileToken=" " InnerProfileToken=
+"doc_token_secCpass" Literal="true"/>
+</InnerProfile>
+5. Save the file.
+6. Check the file into the repository.
+7. Restart Content Transformation Services
+
+##############################################
+# link >> https://www.emc.com/collateral/TechnicalDocument/docu50476.pdf
+#################################################################################
+# solutio fot publishing issue 
+##########################################################################################
+For older version of the product, resolve this issue as follows:
+
+• Check to see if there is a stderr.log file created under %CTS%\config folder or perform a
+search on the host for this file.
+• If the file has any exceptions logged, there could be an issue:
+java.lang.RuntimeException: cts_resources.properties file not found:
+C:\Documentum\CTS\lib\documentum\config\cts_resources.properties (The system
+cannot find the path specified)
+
+• Place these files under the folder specified, and then restart the Content Transformation Services
+services.
+The issue occurs mainly because the system is not getting the correct "DFC User Directory"
+location through the dfc call. This is something configured in the dfc.properties file either
+through dfc.data.dir or dfc.user.dir property. In case these entries are missing in the
+EMC Documentum Content Transformation Services Transformation Suite Version 7.1 Administration Guide 107
+Troubleshooting
+dfc.properties file, DFC will be using the ’current working directory\documentum’ as the dfc
+user directory
+
+
+
+
+
