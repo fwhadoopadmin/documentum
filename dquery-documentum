@@ -1,0 +1,17 @@
+#INVESTIGATION CODE {DQL-QUERY}
+
+SELECT fr.r_folder_path, s.object_name, s.r_modifier, s.r_modify_date
+FROM dom_envt_doc s, dm_sysobject_r sr, dm_folder_r fr
+where object_name in (                                                                                                                       
+'Revised Cost Estimates for Clover and VCHEC, DEQ Approval, 06-17-14.msg',                                                                                                                 
+'Roanoke Rapids and Gaston 2011 FERC A shad Report.msg',                                                                                                                    
+'Roanoke Rapids and Gaston Hydro Stations, Waiver of Annual Hazardous Waste Fee from NCDENR, 08-19-13.msg',                                                                                                                   
+'Roanoke Rapids and Gaston Within Day and Week Peaking Plans Extension of Time Submittal to FERC.msg',  
+'wkly pump inspection second half 13.pdf'
+) 
+AND sr.i_folder_id = fr.r_object_id
+AND s.r_object_id = sr.r_object_id
+AND sr.i_position = -1
+AND fr.i_position = -1
+AND s.i_is_deleted = 0
+order by fr.r_folder_path
